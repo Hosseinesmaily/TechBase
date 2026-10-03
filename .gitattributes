@@ -1,0 +1,15 @@
+# Normalize line endings: LF in the repo, always LF for files that break under CRLF.
+* text=auto
+
+Makefile text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.sql text eol=lf
+
+# binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

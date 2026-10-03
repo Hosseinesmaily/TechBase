@@ -1,0 +1,43 @@
+export default defineNuxtConfig({
+  ssr: true,
+  devtools: { enabled: false },
+  compatibilityDate: "2025-01-01",
+
+  modules: ["@nuxtjs/tailwindcss"],
+
+  css: ["~/assets/css/main.css"],
+
+  typescript: { strict: true },
+
+  app: {
+    head: {
+      htmlAttrs: { lang: "fa", dir: "rtl" },
+      title: "تک‌بیس | پایگاه دانش سخت‌افزار",
+      meta: [
+        { charset: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        {
+          name: "description",
+          content: "پایگاه دانش و ویکی سخت‌افزار کامپیوتر — راهنمای خرید، بنچمارک و پیشنهاد سیستم",
+        },
+      ],
+    },
+  },
+
+  runtimeConfig: {
+    // Server-side base for direct SSR calls; browser always uses the /api proxy.
+    apiInternalBase: process.env.API_INTERNAL_BASE || "http://backend:8000",
+    public: {
+      siteName: "تک‌بیس",
+    },
+  },
+
+  nitro: {
+    // Same-origin /api/** from the browser → proxied to Django (avoids CORS entirely).
+    routeRules: {
+      "/api/**": {
+        proxy: `${process.env.API_INTERNAL_BASE || "http://backend:8000"}/api/**`,
+      },
+    },
+  },
+})

@@ -1,0 +1,42 @@
+# secrets / env
+.env
+.env.local
+*.env!.env
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+htmlcov/
+.coverage
+coverage.xml
+
+# django
+db.sqlite3
+staticfiles/
+media/
+
+# node / nuxt
+node_modules/
+.nuxt/
+.output/
+.dist/
+frontend/dist/
+*.log
+.npm
+
+# ide / os
+.idea/
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+
+# misc
+tmp/
+*.swp

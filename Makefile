@@ -6,11 +6,17 @@ LOCAL ?= 0
 COMPOSE ?= docker compose
 
 ifeq ($(LOCAL),1)
-  PY  := python
+  # Prefer the project venv when present (Windows .venv/Scripts/python.exe or Unix .venv/bin/python).
+  PY := $(shell if [ -x .venv/Scripts/python.exe ]; then echo .venv/Scripts/python.exe; \
+        elif [ -x .venv/bin/python ]; then echo .venv/bin/python; \
+        else echo python; fi)
   NPM := npm
+  # Django/mypy targets need the backend/ cwd on the host; the container WORKDIR is already /app.
+  PY_BE := cd backend && $(PY)
 else
-  PY  := $(COMPOSE) run --rm --no-deps backend python
+  PY := $(COMPOSE) run --rm --no-deps backend python
   NPM := $(COMPOSE) run --rm --no-deps frontend npm
+  PY_BE := $(PY)
 endif
 
 .PHONY: setup run test lint fmt typecheck migrate seed reindex eval down logs
@@ -43,20 +49,20 @@ fmt: ## auto-format backend
 	$(PY) -m ruff check --fix .
 
 typecheck: ## backend mypy (pure modules) + frontend typecheck
-	$(PY) -m mypy apps
+	$(PY_BE) -m mypy apps
 	$(NPM) run typecheck --if-present
 
 migrate:
-	$(PY) manage.py migrate
+	$(PY_BE) manage.py migrate
 
 seed: ## demo data (Phase 1+)
-	$(PY) manage.py seed_demo
+	$(PY_BE) manage.py seed_demo
 
 reindex: ## reindex search + embeddings (Phase 3/4+)
-	$(PY) manage.py reindex
+	$(PY_BE) manage.py reindex
 
 eval: ## RAG evaluation against evals/golden_set.jsonl (Phase 4+)
-	$(PY) manage.py run_evals
+	$(PY_BE) manage.py run_evals
 
 down:
 	$(COMPOSE) down

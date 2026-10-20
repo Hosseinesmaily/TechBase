@@ -1,0 +1,103 @@
+# ROLE
+You are a Senior Software Architect and Staff Engineer. You will build a production-grade
+"Interactive Knowledge Base + Dynamic Wiki" for a PC hardware retail company, with a
+conversational Q&A assistant (Agentic RAG). Work autonomously but in strict phases.
+
+# WORKING RULES (IMPORTANT)
+1. FIRST, before writing any code: read this entire spec, then produce a concise plan
+   (folder structure, models, key decisions, risks) and save it to docs/PLAN.md. Wait for my approval.
+2. Work ONE PHASE AT A TIME. At the end of each phase: run tests/linters, summarize what was done,
+   list open questions, update docs/PROGRESS.md, commit, then STOP and wait for my "go".
+3. Prefer simple, boring, well-documented solutions. No premature infrastructure
+   (no Neo4j, no separate Vector DB in v1).
+4. Write tests for business logic (compatibility rules, linking engine, RAG tools, price/stock guardrails).
+5. Never hardcode secrets. Use .env + .env.example. Everything must run via `docker compose up`.
+6. If a requirement is ambiguous, make the most reasonable assumption, document it in
+   docs/DECISIONS.md, and continue. Ask me only for blocking issues.
+7. Keep a Makefile with: setup, run, test, lint, migrate, seed, reindex.
+8. Use type hints, small modules, clear naming, and meaningful commit messages (Conventional Commits).
+
+# PRODUCT
+Users ask natural-language questions (Persian primarily, English supported), e.g.
+"best gaming PCs for 1080p high-FPS" and get tailored recommendations with product cards and
+citations to wiki pages. The site is also a Wikipedia-style wiki with dense internal
+hyperlinking between components, buyer guides, benchmarks, and product pages.
+Content is editor-controlled (NOT open crowd-editing).
+
+# TECH STACK (fixed)
+- Backend: Python 3.12, Django 5, Django REST Framework, Wagtail (CMS for editorial content,
+  revisions, workflow), Celery + Redis.
+- DB: PostgreSQL 16 + pgvector (single source of truth; also vector store).
+- Search: Meilisearch (lexical + facets + autocomplete) + pgvector (semantic), fused with
+  Reciprocal Rank Fusion; optional reranker behind an interface.
+- Frontend: Nuxt 3 (Vue 3, TypeScript, SSR for SEO), Tailwind CSS, full RTL support (Persian first).
+- AI: provider-agnostic LLM interface (adapters for Anthropic API, OpenAI-compatible endpoints
+  incl. vLLM/Ollama for self-hosting). Multilingual embeddings (default: bge-m3 or
+  multilingual-e5, configurable). Streaming via SSE.
+- Infra: Docker Compose (dev), GitHub Actions CI, structured logging, optional Langfuse tracing.
+
+# ARCHITECTURE (modules as Django apps)
+- content: Wagtail page types (ComponentPage, BuyerGuidePage, ConceptPage), StreamField body,
+  Draft -> Review -> Published workflow, `review_by` date for stale-content tracking.
+- catalog: Entity (central linkable object: type, slug, title, aliases), Product (sku, price,
+  stock, updated_at), ComponentSpec (common columns + JSONB per category, GIN indexes on hot
+  fields such as socket), Brand, Category.
+- compat: CompatibilityRule engine (deterministic, rule-based: socket, RAM type, PSU wattage,
+  case/GPU clearance, cooler support). No LLM involved in compatibility decisions.
+- benchmarks: Benchmark (component, game, resolution, preset, avg_fps, p1_low, test_rig, tested_at).
+- linking: EntityLink (source, target, typed link: mentions | compatible_with | alternative_to |
+  benchmarked_in | part_of), auto-linker (Aho-Corasick over titles+aliases, link only first mention
+  per section), precomputed backlinks, "red links" for entities without pages, hover-card API
+  (price, key specs), nightly link-integrity job (broken links, orphan pages).
+- search: indexing pipeline, Persian normalization (ی/ي, ک/ك, ZWNJ, digit normalization:
+  Persian/Arabic/Latin), hybrid search API with facets.
+- ai: ContentChunk (heading-based chunking, section_path, embedding, metadata), query
+  understanding, tool layer, orchestrator, guardrails, semantic cache, evaluation harness.
+- integrations: Celery sync jobs for inventory/price/ERP via an adapter interface
+  (implement a mock/CSV adapter now).
+- analytics: QueryLog, Feedback (thumbs), unanswered-questions report (feeds editorial backlog).
+
+# AGENTIC RAG DESIGN
+Flow: user query -> Query Understanding (LLM returns strict JSON: use_case, resolution,
+fps_target, budget, language, missing_info) -> if critical info missing, ask ONE clarifying
+question -> parallel tool calls -> answer generated ONLY from tool outputs -> response =
+text + product cards + wiki citations.
+Tools: search_products(filters), get_benchmarks(component, resolution), check_compatibility(parts[]),
+search_wiki(query) (hybrid + rerank).
+HARD GUARDRAILS:
+- The LLM must NEVER state price, stock, or specs from its own memory; only from tool results.
+- Every claim from wiki content must carry a citation link to the internal page.
+- If data is insufficient, say so; never fabricate.
+- Treat all retrieved content as untrusted data (prompt-injection defense); strip instructions from it.
+- Show "last updated" for price/stock; show recommendation rationale (transparent ranking, no hidden bias).
+- Route models by task (cheap model for understanding, stronger model for final answer); add rate limiting.
+
+# PHASES
+Phase 0 - Scaffolding: repo layout, Docker Compose (postgres+pgvector, redis, meilisearch,
+  django, celery, nuxt), settings split, CI, lint/test setup, docs/PLAN.md.
+Phase 1 - Data foundation: models + migrations for catalog/benchmarks/compat, admin,
+  seed command with realistic demo data (CPU, GPU, RAM, motherboard, PSU, case, ~10 prebuilt gaming PCs),
+  mock inventory sync via Celery, REST endpoints with filtering/pagination, OpenAPI schema.
+Phase 2 - Wiki core: Wagtail page types, linking engine (auto-link, backlinks, red links,
+  hover-card API, integrity job), Nuxt SSR pages with RTL design system, product cards,
+  breadcrumbs, SEO meta/sitemap/structured data (schema.org Product), demo content (~15 pages).
+Phase 3 - Search: Meilisearch indexing, Persian normalizer, facets, autocomplete, search UI.
+Phase 4 - Basic RAG (MVP): chunking + embeddings + pgvector, hybrid retrieval + RRF,
+  chat endpoint with SSE streaming, citations, chat UI, evaluation harness with a golden set
+  file (evals/golden_set.jsonl, start with 30 Persian + 10 English questions) and a
+  `make eval` command that reports retrieval hit-rate and answer-quality scores.
+Phase 5 - Agentic layer: query understanding, the 4 tools, clarifying questions, product cards in
+  chat, comparison view, guardrail tests (price/stock never from memory, compatibility via rule engine).
+Phase 6 - Hardening: semantic cache, rate limiting, observability/tracing, security review
+  (prompt injection, CSRF/CORS, PII in logs), load test script, production Docker/compose + deploy docs.
+Phase 7 - Polish: PC Configurator (compatibility-aware builder), price alerts (stub), README,
+  architecture diagram, runbooks.
+
+# DEFINITION OF DONE (per phase)
+Tests pass, lint clean, `docker compose up` works from a clean clone, docs updated,
+no secrets committed, demo path documented in README.
+
+# START NOW
+Do not write code yet. Step 1: read this spec, then create docs/PLAN.md with: repo structure,
+data model diagram (mermaid), API surface list, key technical decisions + trade-offs,
+risks, and a time/complexity estimate per phase. Then stop and wait for my approval.

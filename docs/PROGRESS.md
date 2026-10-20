@@ -31,10 +31,17 @@ Phase log. Updated at every phase gate. Format: what was done / open questions /
 - `compose.yaml` parses (7 services), env_file optional ✓
 - Not verifiable here: `docker compose up` (no Docker on host), `make` (no make on host).
 
+**Post-gate fixes (2026-10-20)**
+- Root `pytest.ini` added: pytest from repo root (make LOCAL/IDE discovery) was failing
+  with `ImproperlyConfigured` (DJANGO_SETTINGS_MODULE unset). Verified 4 passed from
+  both root and `backend/`. (`b7a53c2`)
+- Makefile `LOCAL=1`: now prefers `.venv` over system `python`; Django/mypy targets run
+  from `backend/` on the host (`PY_BE`). (`b7a53c2`)
+- `prompt.txt` (original spec) committed as requested.
+
 **Open questions**
 - None blocking. Git identity not configured on this machine — commits use a per-command
   `-c user.name/-c user.email` placeholder; set `git config user.name/user.email` if you
   want your identity on future commits.
-- `prompt.txt` (original spec) left untracked — say the word if you want it committed.
 
 **Next**: gate review → Phase 1 (data foundation: models, migrations, seed, REST API).

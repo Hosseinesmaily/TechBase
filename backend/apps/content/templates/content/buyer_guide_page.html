@@ -1,0 +1,34 @@
+{% extends "content/base_page.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+  {% if page.use_case or page.resolution %}
+    <dl class="guide-meta">
+      {% if page.use_case %}<dt>کاربرد</dt><dd>{{ page.use_case }}</dd>{% endif %}
+      {% if page.resolution %}<dt>رزولوشن</dt><dd>{{ page.resolution }}</dd>{% endif %}
+      {% if page.budget_max %}<dt>بودجه</dt><dd>{{ page.budget_max }} تومان</dd>{% endif %}
+    </dl>
+  {% endif %}
+
+  {% if page.recommended_products.all %}
+    <section class="recommended">
+      <h2>پیشنهادها</h2>
+      <ol>
+        {% for product in page.recommended_products.all %}
+          <li>
+            <a href="/catalog/product/{{ product.sku }}/">{{ product.display_title }}</a>
+            <span class="price">{{ product.price }} {{ product.currency }}</span>
+            {% if not product.in_stock %}<span class="out-of-stock">ناموجود</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% endif %}
+
+  <div class="body">
+    {% include_block page.body %}
+  </div>
+  {% if page.review_by %}
+    <p class="review-note">بازبینی بعدی: {{ page.review_by }}</p>
+  {% endif %}
+{% endblock %}

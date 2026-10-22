@@ -1,0 +1,138 @@
+"""End-to-end tests for the wiki: seed → link → publish → read.
+
+These cover the path the demo depends on: the seed command creates the
+pages, the auto-linker fills in the links, and the API serves them.
+"""
+
+from __future__ import annotations
+
+import pytest
+from django.core.management import call_command
+from django.urls import reverse
+from rest_framework.test import APIClient
+
+from apps.catalog.models import Entity
+from apps.content.models import BuyerGuidePage, ComponentPage, ConceptPage, WikiPage
+from apps.linking.models import EntityLink
+from apps.linking.services import check_integrity
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def api() -> APIClient:
+    return APIClient()
+
+
+@pytest.fixture
+def seeded_catalog():
+    call_command("seed_demo", verbosity=0)
+    return True
+
+
+@pytest.fixture
+def seeded_wiki(seeded_catalog):
+    call_command("seed_wiki", verbosity=0)
+    return True
+
+
+class TestSeedWiki:
+    def test_creates_the_pages(self, seeded_wiki):
+        assert WikiPage.objects.live().filter(first_published_at__isnull=False).count() >= 14
+
+    def test_creates_all_three_page_types(self, seeded_wiki):
+        assert ComponentPage.objects.live().count() > 0
+        assert ConceptPage.objects.live().count() > 0
+        assert BuyerGuidePage.objects.live().count() > 0
+
+    def test_component_pages_are_bound_to_entities(self, seeded_wiki):
+        page = ComponentPage.objects.live().filter(entity__isnull=False).first()
+        assert page is not None
+        assert page.entity is not None
+        assert page.entity.slug
+
+    def test_guides_reference_real_products(self, seeded_wiki):
+        guide = BuyerGuidePage.objects.live().first()
+        assert guide is not None
+        products = guide.recommended_products.all()
+        assert products.exists()
+        for product in products:
+            assert product.price > 0
+
+    def test_pages_have_a_review_date(self, seeded_wiki):
+        # The section page itself is not a content page and has no review date.
+        content_pages = WikiPage.objects.live().exclude(slug="wiki")[:5]
+        assert content_pages
+        for page in content_pages:
+            assert page.review_by is not None
+
+    def test_seed_is_idempotent(self, seeded_wiki):
+        count = WikiPage.objects.live().count()
+        call_command("seed_wiki", verbosity=0)
+        assert WikiPage.objects.live().count() == count
+
+    def test_bodies_are_not_empty(self, seeded_wiki):
+        for page in ComponentPage.objects.live()[:5]:
+            assert len(page.body) > 0, f"{page.slug} has an empty body"
+
+
+class TestAutoLinkedWiki:
+    def test_pages_get_links(self, seeded_wiki):
+        assert EntityLink.objects.filter(auto_created=True).count() > 0
+
+    def test_links_point_at_real_entities(self, seeded_wiki):
+        slugs = set(Entity.objects.values_list("slug", flat=True))
+        for link in EntityLink.objects.all():
+            assert link.target.slug in slugs
+
+    def test_links_record_the_section(self, seeded_wiki):
+        """A link must know which section it was found in, for citations."""
+        with_section = EntityLink.objects.exclude(section_path="").count()
+        assert with_section > 0
+
+    def test_red_links_exist_for_entities_without_pages(self, seeded_wiki):
+        red = EntityLink.objects.filter(target_exists=False)
+        assert red.count() > 0
+        for link in red:
+            assert not link.target.wiki_pages.live().exists()
+
+    def test_linked_entities_with_a_page_are_not_red(self, seeded_wiki):
+        for link in EntityLink.objects.filter(target_exists=True):
+            assert link.target.wiki_pages.live().exists()
+
+    def test_integrity_check_passes(self, seeded_wiki):
+        result = check_integrity()
+        assert result.broken_links == 0
+        assert result.total_links > 0
+
+
+class TestWikiApiAfterSeed:
+    def test_pages_are_served(self, api, seeded_wiki):
+        response = api.get(reverse("content:page-list"))
+        assert response.status_code == 200
+        assert response.data["count"] >= 14
+
+    def test_a_page_detail_carries_its_body_and_links(self, api, seeded_wiki):
+        response = api.get(reverse("content:page-detail", kwargs={"slug": "ryzen-7-7800x3d"}))
+        assert response.status_code == 200
+        assert response.data["body"]
+        assert response.data["entity"]["slug"] == "ryzen-7-7800x3d"
+
+    def test_the_guide_lists_its_recommendations(self, api, seeded_wiki):
+        response = api.get(
+            reverse("content:page-detail", kwargs={"slug": "best-gaming-pcs-1080p-high-fps"})
+        )
+        assert response.status_code == 200
+        assert response.data["recommended_products"]
+        assert response.data["use_case"]
+
+    def test_hovercard_works_for_a_seeded_entity(self, api, seeded_wiki):
+        response = api.get(reverse("linking:hovercard"), {"entity": "rtx-4060"})
+        assert response.status_code == 200
+        assert response.data["product"]["price"]
+        assert response.data["has_page"] is True
+
+    def test_redlinks_endpoint_lists_the_backlog(self, api, seeded_wiki):
+        response = api.get(reverse("linking:redlinks"))
+        assert response.status_code == 200
+        assert response.data["count"] > 0

@@ -1,0 +1,11 @@
+{% if entity.spec %}
+  <table class="spec-table">
+    <tbody>
+      {% for key, value in entity.spec.common.items %}
+        <tr><th scope="row">{{ key }}</th><td>{{ value }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="no-specs">برای این قطعه مشخصات فنی ثبت نشده است.</p>
+{% endif %}

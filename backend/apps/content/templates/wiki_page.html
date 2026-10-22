@@ -1,0 +1,8 @@
+{% extends "content/base_page.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+  <div class="body">
+    {% include_block page.body %}
+  </div>
+{% endblock %}

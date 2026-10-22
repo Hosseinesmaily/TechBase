@@ -1,0 +1,19 @@
+{% extends "content/base_page.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+  {% if page.entity %}
+    <section class="entity-box" data-entity="{{ page.entity.slug }}">
+      <h2>مشخصات کلیدی</h2>
+      {% include "content/partials/entity_specs.html" with entity=page.entity %}
+    </section>
+  {% endif %}
+
+  <div class="body">
+    {% include_block page.body %}
+  </div>
+
+  {% if page.review_by %}
+    <p class="review-note">بازبینی بعدی: {{ page.review_by }}</p>
+  {% endif %}
+{% endblock %}

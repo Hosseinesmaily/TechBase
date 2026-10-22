@@ -1,0 +1,15 @@
+{% if page.get_ancestors %}
+<nav class="breadcrumbs" aria-label="مسیر">
+  <ol>
+    <li><a href="/">خانه</a></li>
+    {% for ancestor in page.get_ancestors %}
+      {% if ancestor.is_index and not ancestor.is_root %}
+        <li><a href="{% pageurl ancestor %}">{{ ancestor.title }}</a></li>
+      {% else %}
+        <li><span>{{ ancestor.title }}</span></li>
+      {% endif %}
+    {% endfor %}
+    <li><span aria-current="page">{{ page.title }}</span></li>
+  </ol>
+</nav>
+{% endif %}

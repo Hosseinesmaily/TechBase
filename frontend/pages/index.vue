@@ -53,6 +53,19 @@ useSeoMeta({
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="mb-2 font-semibold">کاتالوگ محصولات</h2>
+        <p class="mb-3 text-sm text-slate-600">
+          قیمت، موجودی و مشخصات فنی سیستم‌های آماده و قطعات — با تاریخ به‌روزرسانی.
+        </p>
+        <NuxtLink
+          to="/catalog"
+          class="inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500"
+        >
+          مشاهدهٔ کاتالوگ
+        </NuxtLink>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
         <h2 class="font-semibold mb-2">دستیار هوشمند</h2>
         <p class="text-sm text-slate-600 mb-3">
           سؤال خود را به فارسی بپرسید و پاسخِ با استناد بگیرید. (فاز ۴ فعال می‌شود)

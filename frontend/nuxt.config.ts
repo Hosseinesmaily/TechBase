@@ -26,18 +26,15 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     // Server-side base for direct SSR calls; browser always uses the /api proxy.
+    // Read at runtime (not baked at build time) so one build can be pointed at a
+    // different API host by setting the env var.
     apiInternalBase: process.env.API_INTERNAL_BASE || "http://backend:8000",
     public: {
       siteName: "تک‌بیس",
     },
   },
 
-  nitro: {
-    // Same-origin /api/** from the browser → proxied to Django (avoids CORS entirely).
-    routeRules: {
-      "/api/**": {
-        proxy: `${process.env.API_INTERNAL_BASE || "http://backend:8000"}/api/**`,
-      },
-    },
-  },
+  // The same-origin /api/** → Django proxy lives in server/api/[...path].ts
+  // (a Nitro catch-all route), so nested paths and query strings work and the
+  // upstream host stays a runtime value.
 })

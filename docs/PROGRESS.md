@@ -200,5 +200,69 @@ normalizer, DECISIONS D14).
 **Next**: Phase 3 (search: Meilisearch indexing, Persian normalizer, facets,
 autocomplete, search UI).
 
+---
+
+## Phase 3 — Search — ✅ done (2026-10-22)
+
+**Done**
+- **Persian normaliser** (`apps/search/normalizer.py`): folds ي→ی, ك→ک,
+  ZWNJ→space, Arabic-Indic and Extended-Arabic-Indic digits→Latin, Arabic
+  punctuation→ASCII, drops harakat/tatweel, lowercases Latin, collapses
+  whitespace. Used at **both** the index and the query side — asymmetric
+  normalisation silently destroys recall, so the symmetry is pinned by tests.
+- **Hybrid search** (`apps/search/service.py`): Meilisearch (lexical,
+  typo-tolerant, faceted) + PostgreSQL (always available), fused with
+  **Reciprocal Rank Fusion** (k=60). When Meilisearch is unreachable the
+  PostgreSQL results are returned unchanged, so search keeps working.
+- **Meilisearch integration** (`apps/search/meili.py`): three indexes
+  (entities, products, pages), searchable/facet/sortable attributes, Persian
+  separator tokens, a health check, and a `reindex` management command
+  (`--stats` shows what would be indexed) plus a nightly Celery job.
+- **PostgreSQL backend** (`apps/search/postgres.py`): lexical search over the
+  normalised text; every query token must match; filters by type, brand and
+  stock; facet counts.
+- **API**: `GET /api/v1/search/` (query, kind, type, brand, in_stock,
+  page_size → hits, facets, took_ms, backend), `/api/v1/search/autocomplete/`
+  (word-prefix matching, min 2 chars), `/api/v1/search/facets/` (brands with
+  counts, entity types, stock split).
+- **Frontend**: the search page filters by kind/type/brand/stock, shows facet
+  counts, suggests while typing, and reports which backend answered.
+
+**Verified on this host**
+- `pytest` → **237 passed** ✓ (normalizer 28, search 32, plus the 189 from before)
+- `ruff check` + `format --check` → clean ✓ · `mypy apps` → no issues in 96 files ✓
+- `npm run typecheck` ✓ · `npm run build` ✓
+- Live API: "RTX" → 17 hits, "رایزن" → 11, "4060" → 5, "حافظه" → 14, "DDR5" → 6;
+  facets list all 13 brands with counts; autocomplete suggests the three RTX
+  cards for "RTX" ✓
+- `manage.py reindex --stats` → 89 documents ready (36 entities, 36 products,
+  17 pages); Meilisearch not reachable on this host (no Docker) — the
+  PostgreSQL fallback answers instead ✓
+
+**Bugs found and fixed during the phase**
+- The normaliser's digit map used `ord("٠" + str(i))`, which is a two-character
+  string — `ord()` raised at import time.
+- An empty query matched **every** document (the PostgreSQL backend treated it
+  as "no filter"), so the search page listed the whole catalog.
+- Autocomplete matched only the *start* of the full title, so "RTX" suggested
+  nothing even though every card's title contains "RTX" — it now matches the
+  start of any word, like Meilisearch's prefix strategy.
+- The facet list showed only 4 of 13 brands: `.distinct()` together with an
+  `annotate()` after a `filter()` cut the queryset short.
+- `useFetch` cannot type a computed `query` in Nuxt 3; the search page uses
+  `useAsyncData` with an explicit watcher instead.
+
+**Open questions**
+- None blocking. A Persian *synonym* dictionary ("دی‌دی‌آر" → "DDR5") is not
+  implemented — Meilisearch supports it and it belongs with the Phase 4
+  evaluation set, where the golden set can measure its effect.
+- Not verifiable here: the Meilisearch path itself (no Docker — the WSL2
+  feature is still off). The PostgreSQL fallback and the RRF fusion are tested;
+  the Meilisearch branch is exercised only by the "unavailable" path.
+
+**Next**: Phase 4 (basic RAG: heading-based chunking, embeddings, pgvector,
+hybrid retrieval, SSE chat, citations, evaluation harness + golden set).
+
+
 
 

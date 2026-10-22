@@ -201,6 +201,11 @@ CELERY_BEAT_SCHEDULE: dict[str, dict] = {
         "task": "linking.check_integrity",
         "schedule": 60 * 60 * 24,
     },
+    # Nightly search reindex, so the lexical index never drifts from the DB.
+    "search-reindex-nightly": {
+        "task": "search.reindex",
+        "schedule": 60 * 60 * 24,
+    },
 }
 
 # --- Meilisearch ---

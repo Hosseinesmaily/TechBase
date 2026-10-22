@@ -3,7 +3,7 @@
 Interactive knowledge base + dynamic wiki + agentic RAG assistant for a PC hardware retailer.
 **Persian-first** (UI, content, answers), English supported.
 
-> Status: **Phase 2 (wiki core) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
+> Status: **Phase 3 (search) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Stack
 
@@ -68,6 +68,8 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
      hover a linked name for a card with price, stock and key specs
    - http://localhost:8000/cms/ — the editorial admin (`admin` / `admin`)
 6. `make seed` again is safe (it updates in place).
+7. `make reindex` — build the Meilisearch indexes (needs the search container;
+   without it the search falls back to PostgreSQL and still works).
 
 ### Try the API directly
 

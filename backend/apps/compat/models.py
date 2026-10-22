@@ -39,7 +39,8 @@ class CompatibilityRule(UUIDModel, TimeStampedModel):
 
     class Meta:
         ordering = ["order", "code"]
-        verbose_name = "compatibility rule"
+        verbose_name = "قاعدهٔ سازگاری"
+        verbose_name_plural = "قواعد سازگاری"
 
     def __str__(self) -> str:
         return f"{self.code} [{self.category_a}×{self.category_b}]"

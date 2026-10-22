@@ -60,7 +60,8 @@ class Category(UUIDModel, TimeStampedModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name_plural = "categories"
+        verbose_name = "دسته‌بندی"
+        verbose_name_plural = "دسته‌بندی‌ها"
         ordering = ["name"]
 
     def __str__(self) -> str:
@@ -76,6 +77,8 @@ class Brand(UUIDModel, TimeStampedModel):
     country = models.CharField(max_length=80, blank=True)
 
     class Meta:
+        verbose_name = "برند"
+        verbose_name_plural = "برندها"
         ordering = ["name"]
 
     def __str__(self) -> str:
@@ -114,6 +117,8 @@ class Entity(UUIDModel, TimeStampedModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "موجودیت"
+        verbose_name_plural = "موجودیت‌ها"
         ordering = ["title"]
         indexes = [
             models.Index(fields=["type", "status"], name="entity_type_status_idx"),
@@ -165,6 +170,8 @@ class Product(UUIDModel, TimeStampedModel):
     image_url = models.URLField(blank=True)
 
     class Meta:
+        verbose_name = "محصول"
+        verbose_name_plural = "محصولات"
         ordering = ["-updated_at"]
         indexes = [
             models.Index(fields=["entity", "is_active"], name="product_entity_active_idx"),
@@ -197,7 +204,8 @@ class ComponentSpec(UUIDModel, TimeStampedModel):
     extra = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        verbose_name = "component spec"
+        verbose_name = "مشخصات فنی"
+        verbose_name_plural = "مشخصات فنی"
 
     def __str__(self) -> str:
         return f"spec({self.entity.title})"

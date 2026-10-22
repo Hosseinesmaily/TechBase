@@ -37,6 +37,8 @@ class Benchmark(UUIDModel, TimeStampedModel):
     source = models.CharField(max_length=64, default="seed")
 
     class Meta:
+        verbose_name = "بنچمارک"
+        verbose_name_plural = "بنچمارک‌ها"
         ordering = ["-tested_at", "game"]
         constraints = [
             models.UniqueConstraint(

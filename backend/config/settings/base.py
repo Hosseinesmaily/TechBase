@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -109,6 +110,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "fa"
+# Only the locales we actually support. Without this, Django's admin offers
+# ~90 languages and the UI language follows the browser instead of our product
+# language (Persian first, English secondary).
+LANGUAGES = [("fa", "فارسی"), ("en", "English")]
 TIME_ZONE = "Asia/Tehran"
 USE_I18N = True
 USE_TZ = True

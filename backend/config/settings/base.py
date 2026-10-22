@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     # project apps
     "apps.core",
     "apps.catalog",
+    "apps.compat",
+    "apps.benchmarks",
+    "apps.integrations",
     "apps.search",
 ]
 
@@ -149,7 +152,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_TIME_LIMIT = 120
 CELERY_BEAT_SCHEDULE_FILE = os.getenv("CELERY_BEAT_SCHEDULE_FILE", "/tmp/celerybeat-schedule")
-CELERY_BEAT_SCHEDULE: dict[str, dict] = {}
+CELERY_BEAT_SCHEDULE: dict[str, dict] = {
+    # Nightly inventory/price refresh (mock adapter in v1).
+    "sync-inventory-nightly": {
+        "task": "integrations.sync_inventory",
+        "schedule": 60 * 60 * 3,  # every 3 hours
+        "kwargs": {"adapter": "mock"},
+    },
+}
 
 # --- Meilisearch ---
 MEILI_HOST = os.getenv("MEILI_HOST", "http://meilisearch:7700")

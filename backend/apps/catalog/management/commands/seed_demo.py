@@ -1345,8 +1345,11 @@ class Command(BaseCommand):
 
         for spec in PREBUILTS:
             entity = Entity.objects.get(slug=spec["slug"])
+            # Older seeds used a doubled prefix ("tb-sku-prebuilt-…"); drop
+            # those rows so the catalog holds one SKU per prebuilt.
+            Product.objects.filter(sku__startswith="tb-sku-prebuilt-").delete()
             Product.objects.update_or_create(
-                sku=spec["slug"].replace("tb-", "tb-sku-"),
+                sku="tb-sku-" + spec["slug"].removeprefix("tb-prebuilt-"),
                 defaults={
                     "entity": entity,
                     "title": entity.title,

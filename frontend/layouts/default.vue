@@ -5,6 +5,7 @@
         <NuxtLink to="/" class="font-bold text-lg text-brand-600">تک‌بیس</NuxtLink>
         <div class="flex items-center gap-4 text-sm text-slate-600">
           <NuxtLink to="/" class="hover:text-slate-900">خانه</NuxtLink>
+          <NuxtLink to="/wiki" class="hover:text-slate-900">ویکی</NuxtLink>
           <NuxtLink to="/catalog" class="hover:text-slate-900">کاتالوگ</NuxtLink>
           <NuxtLink to="/search" class="hover:text-slate-900">جستجو</NuxtLink>
           <NuxtLink to="/chat" class="hover:text-slate-900">دستیار</NuxtLink>

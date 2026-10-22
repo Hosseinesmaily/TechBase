@@ -31,6 +31,8 @@ export default defineNuxtConfig({
     apiInternalBase: process.env.API_INTERNAL_BASE || "http://backend:8000",
     public: {
       siteName: "تک‌بیس",
+      // Used for canonical URLs, the sitemap and robots.txt.
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "http://localhost:3000",
     },
   },
 

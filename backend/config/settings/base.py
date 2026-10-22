@@ -39,6 +39,19 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "drf_spectacular",
+    "wagtail",
+    "wagtail.contrib.forms",
+    "wagtail.contrib.redirects",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "modelcluster",
+    "taggit",
     # project apps
     "apps.core",
     "apps.catalog",
@@ -46,6 +59,8 @@ INSTALLED_APPS = [
     "apps.benchmarks",
     "apps.integrations",
     "apps.search",
+    "apps.content",
+    "apps.linking",
 ]
 
 MIDDLEWARE = [
@@ -129,6 +144,22 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Wagtail (CMS for the editorial wiki) ---
+WAGTAIL_SITE_NAME = "تک‌بیس"
+WAGTAILADMIN_BASE_URL = os.getenv("WAGTAILADMIN_BASE_URL", "http://localhost:8000")
+# The editor works in Persian; the admin chrome is translated via LocaleMiddleware.
+WAGTAIL_I18N_ENABLED = True
+WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
+WAGTAILSEARCH_BACKENDS = {
+    "default": {
+        "BACKEND": "wagtail.search.backends.database",
+    }
+}
+# Editorial workflow: draft → review → published (DECISIONS A1).
+WAGTAIL_WORKFLOW_ENABLED = True
+WAGTAILIMAGES_IMAGE_MODEL = "wagtailimages.Image"
+WAGTAILDOCS_DOCUMENT_MODEL = "wagtaildocs.Document"
+
 # --- DRF / schema ---
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
@@ -163,6 +194,12 @@ CELERY_BEAT_SCHEDULE: dict[str, dict] = {
         "task": "integrations.sync_inventory",
         "schedule": 60 * 60 * 3,  # every 3 hours
         "kwargs": {"adapter": "mock"},
+    },
+    # Nightly link-integrity audit: red links + orphan pages (the editorial
+    # backlog) and the repair of the auto-link flags.
+    "link-integrity-nightly": {
+        "task": "linking.check_integrity",
+        "schedule": 60 * 60 * 24,
     },
 }
 

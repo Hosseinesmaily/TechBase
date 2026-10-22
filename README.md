@@ -3,7 +3,7 @@
 Interactive knowledge base + dynamic wiki + agentic RAG assistant for a PC hardware retailer.
 **Persian-first** (UI, content, answers), English supported.
 
-> Status: **Phase 0 (scaffolding)** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
+> Status: **Phase 1 (data foundation) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Stack
 
@@ -26,6 +26,7 @@ Services:
 | Service | URL |
 |---|---|
 | Frontend (Nuxt SSR) | http://localhost:3000 |
+| Catalog (Nuxt page) | http://localhost:3000/catalog |
 | API | http://localhost:8000/api/v1/ |
 | OpenAPI docs | http://localhost:8000/api/docs/ |
 | Django admin | http://localhost:8000/admin/ |
@@ -41,6 +42,7 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 | `make run` | `docker compose up` |
 | `make test` | backend pytest + frontend tests |
 | `make lint` | ruff check/format + frontend typecheck |
+| `make typecheck` | mypy (backend) + nuxt typecheck |
 | `make migrate` / `make seed` / `make reindex` | DB migrate / demo data / reindex |
 | `make eval` | RAG evaluation (Phase 4+) |
 | `make down` / `make logs` | stop / follow logs |
@@ -52,8 +54,41 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 
 1. `make setup && make run`
 2. Open http://localhost:3000 — home shows API health.
-3. `make seed` — demo catalog data (Phase 1).
-4. Browse wiki + search + assistant (Phases 2–5).
+3. `make seed` — demo catalog: 26 components + 10 prebuilt PCs, prices in tomans,
+   real sockets/memory types, benchmark numbers, Persian names.
+4. Browse the catalog at http://localhost:3000/catalog — filter by type, brand,
+   price and stock; every card shows its "last updated" date.
+5. `make seed` again is safe (it updates in place).
+
+### Try the API directly
+
+```bash
+# products with a price + stock
+curl "http://localhost:8000/api/v1/catalog/products/?category=prebuilt&in_stock=true"
+
+# compatibility check — deterministic rules, no LLM
+curl -X POST http://localhost:8000/api/v1/compat/check/ \
+  -H "Content-Type: application/json" \
+  -d '{"parts":["ryzen-7-7800x3d","gigabyte-b760m-ds3h"]}'
+# → {"verdict":"block","findings":[{"rule_code":"SOCKET_MATCH", ...}]}
+
+# benchmark numbers
+curl "http://localhost:8000/api/v1/benchmarks/?component=rtx-4070-super&resolution=1440p"
+```
+
+## Data model (Phase 1)
+
+```
+Brand ─┐
+        ├─ Entity ── ComponentSpec (common/extra JSONB specs)
+Category┘      │
+                ├─ Product (sku, price, stock, updated_at)  ← the only place price/stock live
+                └─ Benchmark (game, resolution, avg_fps, p1_low, rig, tested_at)
+```
+
+`Entity` is the stable identity of a thing; `Product` is a SKU that sells it.
+Compatibility rules are DB rows (tunable severity/params) plus a Python class
+per rule — the verdict is always computed by the rule engine, never by a model.
 
 ## Configuration
 
@@ -67,13 +102,13 @@ All configuration is environment-driven — copy `.env.example` → `.env`.
 # backend (host)
 python -m venv .venv && . .venv/bin/activate
 pip install -r backend/requirements/dev.txt
-cd backend && python manage.py test
+cd backend && python manage.py migrate && python manage.py seed_demo
 
 # frontend (host)
 cd frontend && npm install && npm run dev
 ```
 
-CI runs `ruff`, `pytest`, `nuxt typecheck`, and an SSR build on every push/PR.
+CI runs `ruff`, `pytest`, `mypy`, `nuxt typecheck`, and an SSR build on every push/PR.
 
 ## Docs
 

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.search",
     "apps.content",
     "apps.linking",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
@@ -144,6 +145,11 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+#: The repository root, used to find `evals/` and other repo-level files.
+REPO_DIR = BASE_DIR.parent
+#: The RAG golden set (30 Persian + 10 English questions).
+GOLDEN_SET_PATH = REPO_DIR / "evals" / "golden_set.jsonl"
+
 # --- Wagtail (CMS for the editorial wiki) ---
 WAGTAIL_SITE_NAME = "تک‌بیس"
 WAGTAILADMIN_BASE_URL = os.getenv("WAGTAILADMIN_BASE_URL", "http://localhost:8000")
@@ -216,9 +222,12 @@ MEILI_MASTER_KEY = os.getenv("MEILI_MASTER_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+# anthropic | openai | fake — empty means "detect from the keys, else fake".
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "")
 LLM_CHAT_MODEL = os.getenv("LLM_CHAT_MODEL", "claude-sonnet-4-5")
 LLM_UNDERSTAND_MODEL = os.getenv("LLM_UNDERSTAND_MODEL", "claude-haiku-4-5")
-EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "bge-m3")
+# bge-m3 | e5 | hash — "hash" is the dependency-free local fallback.
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "hash")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))
 

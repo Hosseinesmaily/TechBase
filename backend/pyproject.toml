@@ -38,7 +38,15 @@ check_untyped_defs = true
 [[tool.mypy.overrides]]
 # Third-party packages that ship no type information. Wagtail's own deps
 # (taggit, modelsearch) are pulled in by the app registry, not by our code.
-module = ["taggit.*", "modelsearch.*", "modelcluster.*", "ahocorasick"]
+module = [
+    "taggit.*",
+    "modelsearch.*",
+    "modelcluster.*",
+    "ahocorasick",
+    "anthropic.*",
+    "openai.*",
+    "sentence_transformers.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

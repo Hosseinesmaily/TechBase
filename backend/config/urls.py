@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/v1/search/", include("apps.search.urls")),
     path("api/v1/wiki/", include("apps.content.urls")),
     path("api/v1/linking/", include("apps.linking.urls")),
+    path("api/v1/ai/", include("apps.ai.urls")),
     # The Wagtail editorial admin.
     path("cms/", include(wagtailadmin_urls)),
     path("cms/documents/", include(wagtaildocs_urls)),

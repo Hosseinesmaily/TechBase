@@ -1,0 +1,40 @@
+{"id": "fa-01", "query": "بهترین سیستم گیمینگ برای 1080p با فریم ریت بالا کدام است؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1080p-high-fps"], "expect_entities": ["tb-prebuilt-vanguard-1080"], "must_mention": ["۱۰۸۰"], "forbid": ["guarantee", "بهترین کارت گرافیک جهان"]}
+{"id": "fa-02", "query": "سوکت پردازنده رایزن ۷ ۸۰۰۰X3D چیست؟", "language": "fa", "expect_pages": ["ryzen-7-7800x3d"], "expect_entities": ["ryzen-7-7800x3d"], "must_mention": ["AM5"]}
+{"id": "fa-03", "query": "حافظه DDR5 چیست و چه تفاوتی با DDR4 دارد؟", "language": "fa", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": ["DDR5"]}
+{"id": "fa-04", "query": "قیمت کارت گرافیک RTX 4070 SUPER چقدر است؟", "language": "fa", "expect_pages": ["rtx-4070-super"], "expect_entities": ["rtx-4070-super"], "must_mention": []}
+{"id": "fa-05", "query": "برای بازی در رزولوشن ۱۴۴۰ چه کارت گرافیکی لازم است؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1440p", "rtx-4070-super"], "expect_entities": ["rtx-4070-super"], "must_mention": ["1440"]}
+{"id": "fa-06", "query": "منبع تغذیه مناسب برای RTX 4080 SUPER چند وات است؟", "language": "fa", "expect_pages": ["corsair-rm650x", "psu-sizing"], "expect_entities": ["corsair-rm850x"], "must_mention": ["وات"]}
+{"id": "fa-07", "query": "ری تریسینگ چیست و چه زمانی ارزش دارد؟", "language": "fa", "expect_pages": ["ray-tracing"], "expect_entities": [], "must_mention": ["ری تریسینگ"]}
+{"id": "fa-08", "query": "چطور یک سیستم آماده بخریم؟", "language": "fa", "expect_pages": ["how-to-choose-a-prebuilt-pc"], "expect_entities": [], "must_mention": ["سازگاری"]}
+{"id": "fa-09", "query": "کدام مادربرد برای پردازنده رایزن مناسب است؟", "language": "fa", "expect_pages": ["asus-tuf-gaming-b650-plus"], "expect_entities": ["asus-tuf-gaming-b650-plus"], "must_mention": ["AM5"]}
+{"id": "fa-10", "query": "خنک کننده هایپر ۲۱۲ برای کدام پردازنده ها مناسب است؟", "language": "fa", "expect_pages": ["cooler-master-hyper-212"], "expect_entities": ["cooler-master-hyper-212"], "must_mention": []}
+{"id": "fa-11", "query": "کارت گرافیک رadeon RX 7800 XT چه مشخصاتی دارد؟", "language": "fa", "expect_pages": ["rx-7800-xt"], "expect_entities": ["rx-7800-xt"], "must_mention": []}
+{"id": "fa-12", "query": "سیستم گیمینگ ۱۰۸۰p ارزان کدام است؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1080p-high-fps"], "expect_entities": ["tb-prebuilt-drifter-1080"], "must_mention": []}
+{"id": "fa-13", "query": "حافظه ۳۲ گیگابایتی DDR5 6000 کدام برند است؟", "language": "fa", "expect_pages": ["corsair-vengeance-rgb-32gb-ddr5-6000"], "expect_entities": ["corsair-vengeance-rgb-32gb-ddr5-6000"], "must_mention": []}
+{"id": "fa-14", "query": "اس اس د ۲ ترابایتی سامسونگ چقدر سریع است؟", "language": "fa", "expect_pages": ["samsung-990-pro-2tb"], "expect_entities": ["samsung-990-pro-2tb"], "must_mention": []}
+{"id": "fa-15", "query": "کیس ان زد ایکس تی H5 Flow چه اندازه ای گرافیکی می گیرد؟", "language": "fa", "expect_pages": ["nzxt-h5-flow"], "expect_entities": ["nzxt-h5-flow"], "must_mention": ["۳۶۵"]}
+{"id": "fa-16", "query": "تفاوت بین Ryzen 5 7600 و Ryzen 7 7800X3D چیست؟", "language": "fa", "expect_pages": ["ryzen-7-7800x3d"], "expect_entities": ["ryzen-5-7600", "ryzen-7-7800x3d"], "must_mention": []}
+{"id": "fa-17", "query": "چرا باید از منبع تغذیه با گارانتی بلندمدت استفاده کرد؟", "language": "fa", "expect_pages": ["psu-sizing", "corsair-rm650x"], "expect_entities": [], "must_mention": []}
+{"id": "fa-18", "query": "سیستم آماده ۱۴۴۰p تک بیس فانتزوم چه مشخصاتی دارد؟", "language": "fa", "expect_pages": ["tb-prebuilt-phantom-1440"], "expect_entities": ["tb-prebuilt-phantom-1440"], "must_mention": ["RTX 4070"]}
+{"id": "fa-19", "query": "کارت گرافیک RTX 4060 چند گیگابایت حافظه دارد؟", "language": "fa", "expect_pages": ["rtx-4060"], "expect_entities": ["rtx-4060"], "must_mention": ["۸"]}
+{"id": "fa-20", "query": "پروفایل EXPO چیست؟", "language": "fa", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": ["EXPO"]}
+{"id": "fa-21", "query": "قیمت سیستم گیمینگ فانتوم ۱۴۴۰ چقدر است؟", "language": "fa", "expect_pages": ["tb-prebuilt-phantom-1440"], "expect_entities": ["tb-prebuilt-phantom-1440"], "must_mention": []}
+{"id": "fa-22", "query": "سیستم گیمینگ لگند ۱۴۴۰ با چه کارت گرافیکی عرضه می شود؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1440p", "rx-7800-xt"], "expect_entities": ["rx-7800-xt"], "must_mention": []}
+{"id": "fa-23", "query": "چطور ماژول حافظه را در مادربرد نصب کنم؟", "language": "fa", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": []}
+{"id": "fa-24", "query": "قیمت کارت گرافیک RX 7600 چقدر است و موجود است؟", "language": "fa", "expect_pages": [], "expect_entities": ["rx-7600"], "must_mention": []}
+{"id": "fa-25", "query": "کدام سیستم آماده برای کار اداری مناسب است؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1080p-high-fps", "how-to-choose-a-prebuilt-pc"], "expect_entities": ["tb-prebuilt-nomad-office"], "must_mention": []}
+{"id": "fa-26", "query": "حافظه DDR4 با کدام مادربردها کار می کند؟", "language": "fa", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": ["DDR4"]}
+{"id": "fa-27", "query": "بیشترین فریم ریت در بازی کانتر استرایک ۲ با کدام سیستم به دست می آید؟", "language": "fa", "expect_pages": ["ryzen-7-7800x3d"], "expect_entities": ["ryzen-7-7800x3d"], "must_mention": []}
+{"id": "fa-28", "query": "سیستم آماده اپکس ۴K چه قطعاتی دارد؟", "language": "fa", "expect_pages": ["tb-prebuilt-phantom-1440", "best-gaming-pcs-1440p"], "expect_entities": ["tb-prebuilt-apex-4k"], "must_mention": []}
+{"id": "fa-29", "query": "چطور فریم ریت را در بازی های رقابتی بالا ببریم؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1080p-high-fps", "ryzen-7-7800x3d"], "expect_entities": [], "must_mention": []}
+{"id": "fa-30", "query": "مانیتور مناسب برای سیستم گیمینگ چه نرخ رفرشی دارد؟", "language": "fa", "expect_pages": ["best-gaming-pcs-1080p-high-fps"], "expect_entities": [], "must_mention": ["۱۴۴"]}
+{"id": "en-01", "query": "What socket does the Ryzen 7 7800X3D use?", "language": "en", "expect_pages": ["ryzen-7-7800x3d"], "expect_entities": ["ryzen-7-7800x3d"], "must_mention": ["AM5"]}
+{"id": "en-02", "query": "How much does the RTX 4070 SUPER cost?", "language": "en", "expect_pages": ["rtx-4070-super"], "expect_entities": ["rtx-4070-super"], "must_mention": []}
+{"id": "en-03", "query": "What is DDR5 and how is it different from DDR4?", "language": "en", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": ["DDR5"]}
+{"id": "en-04", "query": "Which PSU do I need for an RTX 4080 SUPER?", "language": "en", "expect_pages": ["corsair-rm650x", "psu-sizing"], "expect_entities": ["corsair-rm850x"], "must_mention": []}
+{"id": "en-05", "query": "What is the best prebuilt PC for 1080p high FPS gaming?", "language": "en", "expect_pages": ["best-gaming-pcs-1080p-high-fps"], "expect_entities": ["tb-prebuilt-vanguard-1080"], "must_mention": []}
+{"id": "en-06", "query": "Is ray tracing worth it at 1080p?", "language": "en", "expect_pages": ["ray-tracing"], "expect_entities": [], "must_mention": []}
+{"id": "en-07", "query": "How much power does the RTX 4070 SUPER draw?", "language": "en", "expect_pages": ["rtx-4070-super"], "expect_entities": ["rtx-4070-super"], "must_mention": []}
+{"id": "en-08", "query": "Which case fits the RTX 4080 SUPER?", "language": "en", "expect_pages": ["nzxt-h5-flow", "rtx-4070-super"], "expect_entities": ["nzxt-h5-flow"], "must_mention": []}
+{"id": "en-09", "query": "What is the EXPO profile?", "language": "en", "expect_pages": ["ddr5"], "expect_entities": [], "must_mention": ["EXPO"]}
+{"id": "en-10", "query": "How do I choose a prebuilt gaming PC?", "language": "en", "expect_pages": ["how-to-choose-a-prebuilt-pc"], "expect_entities": [], "must_mention": []}

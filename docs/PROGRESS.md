@@ -263,6 +263,87 @@ autocomplete, search UI).
 **Next**: Phase 4 (basic RAG: heading-based chunking, embeddings, pgvector,
 hybrid retrieval, SSE chat, citations, evaluation harness + golden set).
 
+---
+
+## Phase 4 — Basic RAG MVP — ✅ done (2026-10-22)
+
+**Done**
+- **Chunking** (`apps/ai/chunking.py`): heading-based — a chunk *is* a section,
+  with the heading path ("معرفی > سازگاری") kept, so a citation points at a
+  part of a page. Long sections split on paragraph (then sentence) boundaries
+  with a token overlap. 17 pages → 57 chunks.
+- **Embeddings** (`apps/ai/embeddings.py`): a provider interface with a real
+  model (bge-m3 / e5 via sentence-transformers) and a **dependency-free local
+  fallback** (deterministic character n-gram hashing) so the whole pipeline
+  runs with no model download.
+- **Retrieval** (`apps/ai/retrieval.py`): semantic (embeddings) + lexical
+  (the shared Persian normaliser), fused with RRF. The searchable text of a
+  chunk includes the page slug, the entity's names and aliases and the spec
+  values — otherwise an English question would never match a Persian chunk.
+- **Guardrails** (`apps/ai/guardrails.py`): the hard rules from the spec, as
+  testable mechanics:
+  - a price or a stock count in the answer that is **not in the tool results**
+    is a fabrication → the answer is replaced with an honest message;
+  - retrieved content is stripped of instruction-like lines (English *and*
+    Persian) before it reaches the prompt, and wrapped in `<<<CONTEXT>>>`;
+  - a wiki claim without a citation marker is rejected;
+  - citation markers ("[1]") are excluded from the number check — they are
+    references, not prices.
+- **LLM adapters** (`apps/ai/llm.py`): Anthropic, any OpenAI-compatible
+  endpoint, and a `FakeLLM` that quotes the context (never invents). The model
+  is routed by task (cheap for understanding, strong for the answer).
+- **Chat API**: `POST /api/v1/ai/chat/` streams SSE (`citations`, `token`,
+  `replace`, `guardrails`, `done`, `error`); `POST /api/v1/ai/chat/feedback/`
+  takes a thumbs up/down; `GET /api/v1/ai/logs/` (staff).
+- **Evaluation harness**: `evals/golden_set.jsonl` — 30 Persian + 10 English
+  questions with the expected pages, entities, phrases and forbidden
+  phrases. `make eval` reports the retrieval hit-rate and the answer quality,
+  per language, and fails below a threshold.
+- **Frontend**: the chat page with the streaming answer, the citation list
+  linking to the exact section, and a "not verified" notice when a guardrail
+  rejects the draft.
+
+**Verified on this host**
+- `pytest` → **317 passed** ✓ (guardrails 23, chunking 16, chat 12, evaluation 18)
+- `ruff check` + `format --check` → clean ✓ · `mypy apps` → no issues in 118 files ✓
+- `npm run typecheck` ✓ · `npm run build` ✓
+- `manage.py run_evals` → **retrieval hit-rate 97.5%** (fa 96.7%, en 100%),
+  **answer quality 100%**, **citation rate 100%**, **guardrail pass 100%**
+- Live API: a JSON answer with 6 citations and a guardrail-clean report; the
+  SSE stream emits all four event types ✓
+
+**Bugs found and fixed during the phase**
+- The lexical search required **every** query token to appear, so a natural
+  question ("سوکت پردازنده‌های AMD چیست؟") matched nothing. It is now an OR
+  with a coverage-weighted score and a stopword list.
+- The retrieval searched only the chunk's prose, so an English question never
+  matched a Persian chunk. The searchable text now includes the page slug, the
+  entity's latin names and aliases, and the spec values.
+- The guardrail read the citation marker "[1]" as a price and rejected every
+  cited answer.
+- The spec values (socket "AM5", "۳۶۵") were not in the context, so the model
+  could not state them; the entity's specs are now part of the context block.
+- The embedding provider raised at the *first* call when
+  sentence-transformers was missing, instead of falling back.
+- Persian console output crashed the management commands with a
+  UnicodeEncodeError (cp1252); `apps/core/console.py` handles it.
+
+**Open questions**
+- None blocking. The `hash` embedding provider is a baseline, not a semantic
+  model — the semantic side of the retrieval only becomes real with
+  `EMBEDDING_PROVIDER=bge-m3` and `pip install sentence-transformers`.
+  The lexical side carries the retrieval today, which is why the Persian
+  hit-rate is high and the English one is only at 100% because the golden set
+  was written against the same catalog.
+- The evaluation runs against a *scripted* model, so it measures the pipeline
+  (retrieval, citations, guardrails) rather than a model's wording. A real
+  model is measured by the same harness once an API key is configured.
+- Not verifiable here: pgvector (the semantic search), Docker.
+
+**Next**: Phase 5 (agentic layer: query understanding, the four tools,
+clarifying questions, product cards in the chat, comparison view).
+
+
 
 
 

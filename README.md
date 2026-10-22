@@ -3,7 +3,7 @@
 Interactive knowledge base + dynamic wiki + agentic RAG assistant for a PC hardware retailer.
 **Persian-first** (UI, content, answers), English supported.
 
-> Status: **Phase 3 (search) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
+> Status: **Phase 4 (RAG MVP) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Stack
 
@@ -47,6 +47,7 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 | `make typecheck` | mypy (backend) + nuxt typecheck |
 | `make migrate` / `make seed` / `make reindex` | DB migrate / demo data / reindex |
 | `make seed-wiki` | demo wiki pages + auto-linking (Phase 2+) |
+| `make index-content` | chunk + embed the wiki for the assistant (Phase 4+) |
 | `make eval` | RAG evaluation (Phase 4+) |
 | `make down` / `make logs` | stop / follow logs |
 
@@ -70,6 +71,18 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 6. `make seed` again is safe (it updates in place).
 7. `make reindex` — build the Meilisearch indexes (needs the search container;
    without it the search falls back to PostgreSQL and still works).
+8. `make index-content` — chunk and embed the wiki pages for the assistant.
+9. Ask the assistant at http://localhost:3000/chat — the answer carries
+   citations that link to the exact section it came from.
+
+### Evaluate the assistant
+
+```bash
+make eval        # the golden set: 30 Persian + 10 English questions
+```
+
+Reports the retrieval hit-rate, the answer quality, the citation rate and
+the guardrail pass rate, per language, and lists the failures.
 
 ### Try the API directly
 

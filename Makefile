@@ -19,7 +19,7 @@ else
   PY_BE := $(PY)
 endif
 
-.PHONY: setup run test lint fmt typecheck migrate seed reindex eval down logs
+.PHONY: setup run test lint fmt typecheck migrate seed seed-wiki reindex eval down logs
 
 setup: ## create .env, build images, migrate
 ifeq ($(LOCAL),1)
@@ -57,6 +57,9 @@ migrate:
 
 seed: ## demo data (Phase 1+)
 	$(PY_BE) manage.py seed_demo
+
+seed-wiki: ## demo wiki pages + auto-linking (Phase 2+)
+	$(PY_BE) manage.py seed_wiki
 
 reindex: ## reindex search + embeddings (Phase 3/4+)
 	$(PY_BE) manage.py reindex

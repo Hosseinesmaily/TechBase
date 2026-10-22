@@ -129,4 +129,76 @@ brand name contains "RT"). Fuzzy/typo-tolerant matching, Persian tokenization
 (ZWNJ), diacritics and digit folding are Phase 3 work (Meilisearch + the shared
 normalizer, DECISIONS D14).
 
+---
+
+## Phase 2 — Wiki core — ✅ done (2026-10-22)
+
+**Done**
+- **Wagtail 6.4** as the editorial CMS: `WikiPage` base + `ComponentPage`,
+  `BuyerGuidePage`, `ConceptPage`, all with a StreamField body (heading /
+  paragraph / list / quote / callout / spec-table / image / related-entity),
+  a `review_by` date for stale-content tracking, and an optional binding to a
+  catalog `Entity`. The admin lives at **/cms/**, in Persian.
+- **Auto-linker** (`apps/linking/autolinker.py`): Aho-Corasick over every
+  entity's names, word-boundary aware, longest-match-wins, first mention per
+  section. Brand names are excluded (noise). Brand names are excluded — a brand
+  is reachable through its product, not through a link.
+- **Link graph**: `EntityLink` stores typed edges with their section path; a
+  target without a page is a **red link** = the editorial backlog. Backlinks,
+  hover cards (price, stock, key specs, page link), the red-link list and the
+  orphan-page list are exposed as API. A nightly Celery job records a
+  `LinkIntegrityReport`.
+- **Wiki API**: `GET /api/v1/wiki/pages/` and `/pages/{slug}/` serve published
+  pages only, with the body as typed blocks.
+- **Demo content**: `make seed-wiki` writes 17 pages of real Persian technical
+  writing (component pages, concept pages, buying guides with recommended
+  products), then auto-links them — 37 links, 12 red links.
+- **Frontend**: `/wiki` (index with type filter), `/wiki/{slug}/` (body with
+  internal entity links that show a hover card on hover, breadcrumbs, spec
+  tables, callouts, product recommendations), `/entity/{slug}/`, schema.org
+  Article/Product structured data, `sitemap.xml` (17 URLs) and `robots.txt`.
+- **`manage.py configure_site`**: points the Wagtail site at this backend
+  (hostname + port) and roots it at the site's home page — without it the admin
+  shows every page as "outside any site".
+
+**Verified on this host**
+- `pytest` → **189 passed** ✓ (linking engine 20, linking services/API 21,
+  content API 14, wiki end-to-end 18, plus the 116 from earlier phases)
+- `ruff check` + `format --check` → clean ✓ · `mypy apps` → no issues in 89 files ✓
+- `npm run typecheck` ✓ · `npm run build` (SSR) ✓
+- Live: `/wiki` lists 14 published pages; `/wiki/ryzen-7-7800x3d/` renders with
+  3 internal links, a spec table and JSON-LD; the 1080p buying guide shows its
+  4 recommended products with prices; hover card returns price + 4 specs;
+  red-link backlog lists 6 entities that still need a page ✓
+- Wagtail admin: login works, all 17 wiki pages are listed and editable ✓
+
+**Bugs found and fixed during the phase**
+- The auto-linker returned **every** overlapping match: "RTX 4060" also linked
+  "4060". Fixed by dropping matches shadowed by a longer one. (The bug was
+  hidden by the regex fallback until `pyahocorasick` was installed.)
+- The linker's `existing` map keyed by UUID while the match loop keyed by
+  string, so every re-link looked new and violated the unique constraint.
+- Brand names were linked as entities ("ای‌ام‌دی" → a product page).
+- Orphan pages were computed as "pages with no outgoing links" — the opposite
+  of the definition. Now: pages nothing links *to*.
+- The wiki section page was created under the tree root instead of the site
+  root, so Wagtail treated the pages as belonging to no site.
+- The Wagtail site pointed at port 80 while the backend runs on 8000.
+- Seeded prebuilt SKUs were doubled (`tb-sku-tb-prebuilt-…`), and the guide's
+  recommended products referenced those wrong SKUs.
+- The seed set the guide's fields *after* publishing, so the published
+  revision kept the empty values (the API returned 404 for the guide).
+- `add_child` copies the page instance; the seed kept editing the unsaved
+  original, so `review_by` and the body were lost.
+
+**Open questions**
+- None blocking. The wiki demo content is 17 pages; the spec asked for ~15, and
+  the six red links are the natural next pages to write.
+- Not verifiable here: `docker compose up` (no Docker — the WSL2 feature is
+  still off) and `make` (no make on this host).
+
+**Next**: Phase 3 (search: Meilisearch indexing, Persian normalizer, facets,
+autocomplete, search UI).
+
+
 

@@ -3,7 +3,7 @@
 Interactive knowledge base + dynamic wiki + agentic RAG assistant for a PC hardware retailer.
 **Persian-first** (UI, content, answers), English supported.
 
-> Status: **Phase 1 (data foundation) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
+> Status: **Phase 2 (wiki core) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Stack
 
@@ -27,8 +27,10 @@ Services:
 |---|---|
 | Frontend (Nuxt SSR) | http://localhost:3000 |
 | Catalog (Nuxt page) | http://localhost:3000/catalog |
+| Wiki (Nuxt page) | http://localhost:3000/wiki |
 | API | http://localhost:8000/api/v1/ |
 | OpenAPI docs | http://localhost:8000/api/docs/ |
+| Editorial CMS (Wagtail) | http://localhost:8000/cms/ |
 | Django admin | http://localhost:8000/admin/ |
 | Meilisearch | http://localhost:7700 |
 
@@ -44,6 +46,7 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 | `make lint` | ruff check/format + frontend typecheck |
 | `make typecheck` | mypy (backend) + nuxt typecheck |
 | `make migrate` / `make seed` / `make reindex` | DB migrate / demo data / reindex |
+| `make seed-wiki` | demo wiki pages + auto-linking (Phase 2+) |
 | `make eval` | RAG evaluation (Phase 4+) |
 | `make down` / `make logs` | stop / follow logs |
 
@@ -56,9 +59,15 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
 2. Open http://localhost:3000 — home shows API health.
 3. `make seed` — demo catalog: 26 components + 10 prebuilt PCs, prices in tomans,
    real sockets/memory types, benchmark numbers, Persian names.
-4. Browse the catalog at http://localhost:3000/catalog — filter by type, brand,
-   price and stock; every card shows its "last updated" date.
-5. `make seed` again is safe (it updates in place).
+4. `make seed-wiki` — 17 wiki pages of Persian technical writing, auto-linked
+   (37 internal links, 12 red links = the editorial backlog).
+5. Browse:
+   - http://localhost:3000/catalog — filter by type, brand, price, stock
+   - http://localhost:3000/wiki — the article index
+   - http://localhost:3000/wiki/ryzen-7-7800x3d/ — a page with internal links;
+     hover a linked name for a card with price, stock and key specs
+   - http://localhost:8000/cms/ — the editorial admin (`admin` / `admin`)
+6. `make seed` again is safe (it updates in place).
 
 ### Try the API directly
 

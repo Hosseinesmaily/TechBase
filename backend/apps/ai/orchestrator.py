@@ -21,6 +21,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from .cache import find_similar, store
 from .guardrails import enforce, sanitize_retrieved, wrap_untrusted
 from .llm import LLM, Message, get_llm
 from .models import QueryLog
@@ -268,6 +269,7 @@ def run_agent(
     language: str = "fa",
     log: bool = True,
     ask_clarifying: bool = True,
+    use_cache: bool = True,
 ) -> AgentResult:
     """Run one agentic turn."""
     started = time.perf_counter()
@@ -291,6 +293,25 @@ def run_agent(
                 latency_ms=result.latency_ms,
             )
         return result
+
+    # The semantic cache: a repeated question must not cost a second call.
+    if use_cache:
+        cached = find_similar(query)
+        if cached is not None:
+            result.answer = cached.answer
+            result.citations = cached.citations
+            result.cards = [_card_from_dict(item) for item in cached.cards]
+            result.guardrails = {"ok": True, "cached": True, "similarity": cached.similarity}
+            result.latency_ms = int((time.perf_counter() - started) * 1000)
+            if log:
+                result.query_log_id = _log(
+                    query,
+                    result,
+                    understanding=understanding,
+                    latency_ms=result.latency_ms,
+                    cached_from=cached.query_log_id,
+                )
+            return result
 
     plan = plan_tools(query, understanding)
     tool_results = run_plan(plan)
@@ -348,8 +369,32 @@ def run_agent(
         result.query_log_id = _log(
             query, result, understanding=understanding, latency_ms=result.latency_ms
         )
+        # Only a good answer is worth caching.
+        if report.get("ok"):
+            store(
+                query,
+                query_log=QueryLog.objects.get(id=result.query_log_id),
+                answer=answer,
+                citations=result.citations,
+                cards=[card.as_dict() for card in result.cards],
+            )
 
     return result
+
+
+def _card_from_dict(data: dict) -> ProductCard:
+    """A product card from its stored form."""
+    return ProductCard(
+        sku=str(data.get("sku", "")),
+        title=str(data.get("title", "")),
+        price=str(data.get("price", "")),
+        currency=str(data.get("currency", "IRT")),
+        in_stock=bool(data.get("in_stock")),
+        stock=int(data.get("stock", 0) or 0),
+        entity_slug=str(data.get("entity_slug", "")),
+        entity_type=str(data.get("entity_type", "")),
+        updated_at=str(data.get("updated_at", "")),
+    )
 
 
 def _log(
@@ -358,9 +403,16 @@ def _log(
     *,
     understanding: QueryUnderstanding,
     latency_ms: int,
+    cached_from: str = "",
 ) -> str:
     """Write the query log."""
     from apps.search.normalizer import normalize
+
+    metrics: dict = {"guardrails": result.guardrails, "cards": len(result.cards)}
+    if cached_from:
+        metrics["cached_from"] = cached_from
+    if result.clarifying_question:
+        metrics["clarifying_question"] = result.clarifying_question
 
     log = QueryLog.objects.create(
         raw_query=query,
@@ -372,6 +424,6 @@ def _log(
         language=result.language,
         latency_ms=latency_ms,
         query_hash=normalize(query)[:64],
-        metrics={"guardrails": result.guardrails, "cards": len(result.cards)},
+        metrics=metrics,
     )
     return str(log.id)

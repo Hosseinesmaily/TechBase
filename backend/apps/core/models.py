@@ -24,3 +24,23 @@ class UUIDModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class RateLimitCounter(TimeStampedModel):
+    """The database fallback for the rate limiter.
+
+    Only used when Redis is unreachable — it is slower, but the limit still
+    holds.
+    """
+
+    key = models.CharField(max_length=255, unique=True)
+    count = models.PositiveIntegerField(default=0)
+    # The minute the counter belongs to.
+    window = models.BigIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "rate limit counter"
+        verbose_name_plural = "rate limit counters"
+
+    def __str__(self) -> str:
+        return f"{self.key}={self.count}"

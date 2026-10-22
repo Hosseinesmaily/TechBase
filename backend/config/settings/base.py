@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from apps.core.log_filters import ScrubFilter
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -74,6 +75,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # The rate limiter sits last, so it counts the real request.
+    "apps.core.middleware.RateLimitMiddleware",
+    # The trace id: one per request, echoed in the X-Trace-Id header.
+    "apps.core.observability.trace_middleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -177,9 +182,13 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Rate limiting is enabled in Phase 6 with explicit DEFAULT_THROTTLE_RATES.
+    # The rate limiting is done by apps.core.middleware.RateLimitMiddleware, so
+    # DRF's own throttles stay off — two limiters would fight each other.
     "DEFAULT_THROTTLE_CLASSES": [],
-    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "chat": "20/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": os.getenv("RATE_LIMIT_ANON", "120/min"),
+        "chat": os.getenv("RATE_LIMIT_CHAT", "20/min"),
+    },
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "TechBase API",
@@ -231,9 +240,18 @@ EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "hash")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))
 
+# --- Tracing (optional) ---
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY", "")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "")
+
 # --- Logging ---
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_FORMAT = os.getenv("LOG_FORMAT", "console")  # console | json
+# Personal data (emails, phone numbers, national IDs) is removed from the log
+# lines. The raw query stays in the database, where the editorial team can see
+# it, but it never reaches a log file.
+SCRUB_LOGS = env_bool("SCRUB_LOGS", True)
 LOGGING: dict = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -245,6 +263,9 @@ LOGGING: dict = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "json" if LOG_FORMAT == "json" else "console",
+            # Personal data never reaches a log file. The filter is given as a
+            # factory, because `dictConfig` calls the callable to build it.
+            "filters": [ScrubFilter()],
         },
     },
     "root": {"handlers": ["console"], "level": LOG_LEVEL},

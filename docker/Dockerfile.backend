@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc \
+    && apt-get install -y --no-install-recommends gcc libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -24,7 +24,14 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # --- prod: gunicorn, no dev extras ---
 FROM base AS prod
+RUN apt-get purge -y gcc && apt-get autoremove -y
+COPY backend/requirements/ requirements/
 RUN pip install -r requirements/prod.txt
 COPY backend/ .
+# The static files are collected at build time; the media directory is a volume.
+RUN mkdir -p /app/staticfiles /app/media
+ENV DJANGO_SETTINGS_MODULE=config.settings.prod
 EXPOSE 8000
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60"]
+# SSE needs a long timeout and a streaming-capable server, so the ASGI worker
+# (uvicorn) is used instead of the sync gunicorn worker.
+CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "3", "--timeout-keep-alive", "75"]

@@ -46,6 +46,7 @@ module = [
     "anthropic.*",
     "openai.*",
     "sentence_transformers.*",
+    "langfuse.*",
 ]
 ignore_missing_imports = true
 

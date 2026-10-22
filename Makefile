@@ -19,7 +19,7 @@ else
   PY_BE := $(PY)
 endif
 
-.PHONY: setup run test lint fmt typecheck migrate seed seed-wiki index-content reindex eval down logs
+.PHONY: setup run test lint fmt typecheck migrate seed seed-wiki index-content reindex eval down logs prod-up prod-down load-test cache-invalidate
 
 setup: ## create .env, build images, migrate
 ifeq ($(LOCAL),1)
@@ -75,3 +75,16 @@ down:
 
 logs:
 	$(COMPOSE) logs -f
+
+prod-up: ## production stack (compose.yaml + compose.prod.yaml)
+	@test -f .env || (echo "create .env first" && exit 1)
+	$(COMPOSE) -f compose.yaml -f compose.prod.yaml up -d --build
+
+prod-down: ## stop the production stack
+	$(COMPOSE) -f compose.yaml -f compose.prod.yaml down
+
+load-test: ## a small load test against the running API
+	$(PY) scripts/load_test.py --url http://localhost:8000 --requests 200
+
+cache-invalidate: ## drop the semantic cache (after a catalog change)
+	$(PY_BE) manage.py invalidate_cache

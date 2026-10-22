@@ -1,0 +1,165 @@
+# Production compose overlay.
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d
+#
+# It adds the production images (gunicorn, the built Nuxt server) and the
+# settings that must not be left at their development values.
+
+name: techbase
+
+x-backend-env: &backend-env
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in .env}
+  DJANGO_DEBUG: "false"
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in .env}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_FORMAT: ${LOG_FORMAT:-json}
+  DB_ENGINE: postgres
+  DB_NAME: ${DB_NAME:-techbase}
+  DB_USER: ${DB_USER:-techbase}
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+  DB_HOST: db
+  DB_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  MEILI_HOST: http://meilisearch:7700
+  MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY in .env}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+  LLM_PROVIDER: ${LLM_PROVIDER:-}
+  LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-claude-sonnet-4-5}
+  LLM_UNDERSTAND_MODEL: ${LLM_UNDERSTAND_MODEL:-claude-haiku-4-5}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-bge-m3}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-m3}
+  EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+  LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+  LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+  LANGFUSE_HOST: ${LANGFUSE_HOST:-}
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+
+services:
+  db:
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-techbase}
+      POSTGRES_USER: ${DB_USER:-techbase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    # The port is not published in production: only the app reaches the database.
+
+  redis:
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-}"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  meilisearch:
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY in .env}
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_ENV: production
+    volumes:
+      - meilidata:/meili_data
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: prod
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py configure_site &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    env_file:
+      - .env
+    environment:
+      <<: *backend-env
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: prod
+    restart: unless-stopped
+    command: celery -A config worker -l INFO --concurrency=4
+    env_file:
+      - .env
+    environment:
+      <<: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: prod
+    restart: unless-stopped
+    command: celery -A config beat -l INFO --schedule=/tmp/celerybeat-schedule
+    env_file:
+      - .env
+    environment:
+      <<: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      target: prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: "3000"
+      NODE_ENV: production
+      API_INTERNAL_BASE: http://backend:8000
+      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  pgdata:
+  redisdata:
+  meilidata:
+  staticfiles:
+  media:

@@ -3,8 +3,11 @@ Django>=5.2,<5.3
 djangorestframework>=3.15,<4
 django-filter>=25.1,<26
 drf-spectacular>=0.28,<1
-# Wagtail is added in Phase 2 (docs/DECISIONS.md A1):
-# wagtail>=6.2,<8
+# Wagtail (CMS for the editorial wiki — added in Phase 2, DECISIONS.md A1)
+wagtail>=6.4,<7
+# Aho-Corasick for the auto-linker: O(text) matching over every entity name.
+# The linker falls back to a regex matcher when this is unavailable.
+pyahocorasick>=2.1,<3
 
 # async / tasks
 celery>=5.4,<6

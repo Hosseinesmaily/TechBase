@@ -108,3 +108,25 @@ Phase log. Updated at every phase gate. Format: what was done / open questions /
 **Next**: Phase 2 (Wiki core: Wagtail page types, linking engine, Nuxt RTL design
 system, SEO/sitemap, demo content).
 
+---
+
+## Post-Phase-1 additions (2026-10-22)
+
+- **Admin in Persian**: `LocaleMiddleware` installed, `LANGUAGES` limited to fa/en
+  (Django offered ~90 locales and followed the browser), Persian `verbose_name` on
+  every model and app label. The login page reads «ورود | مدیریت وب‌گاه Django».
+  Superuser `admin` / `admin` created for local development.
+- **Search**: `GET /api/v1/search/` returns products + entities in one response;
+  `GET /api/v1/search/autocomplete/` suggests titles (min 2 chars). The `/search`
+  page renders both result sets with Persian prices. Both endpoints are shaped so
+  Phase 3 can swap the SQL internals for hybrid Meilisearch + pgvector without
+  changing any client.
+- Tests: 104 → **116 passing**; `ruff`, `mypy`, `nuxt typecheck` clean.
+
+**Note on search**: Phase 1 search is SQL `icontains` — it matches substrings
+anywhere in the title, so "RTX" also matches "منبع تغذیه Corsair RM650x" (the
+brand name contains "RT"). Fuzzy/typo-tolerant matching, Persian tokenization
+(ZWNJ), diacritics and digit folding are Phase 3 work (Meilisearch + the shared
+normalizer, DECISIONS D14).
+
+

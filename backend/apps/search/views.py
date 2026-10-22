@@ -1,130 +1,121 @@
 """Search API.
 
-Phase 1 ships a simple SQL search over the catalog (title/summary contains).
-Phase 3 replaces the internals with a hybrid Meilisearch + pgvector pipeline
-fused with RRF, behind this same endpoint — the response shape stays the same
-so the frontend does not change.
+Phase 3 (this file): the hybrid pipeline — Meilisearch for lexical matching
+and facets, PostgreSQL as the always-available baseline, fused with RRF.
 """
 
 from __future__ import annotations
 
-from django.db.models import Q
-from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.catalog.models import Entity, Product
-from apps.catalog.serializers import EntityListSerializer, ProductSerializer
-from apps.core.pagination import DefaultPagination
+from . import service
 
 
 class SearchView(APIView):
-    """Search products and entities.
+    """`GET /api/v1/search/?q=<query>`
 
-    `GET /api/v1/search/?q=<query>&page_size=24`
+    Query parameters:
+      * `q`          — the search text (Persian or English)
+      * `type`       — filter by entity type (gpu, cpu, prebuilt, …)
+      * `brand`      — filter by brand slug
+      * `in_stock`   — `true` / `false`
+      * `kind`       — restrict to `entity`, `product` or `page`
+      * `page_size`  — how many hits (default 24, max 100)
 
-    Returns both result sets in one response so the UI renders one page.
+    The response carries the hits, the facet counts and how long the search
+    took, plus which backend answered (`hybrid`, `meilisearch` or `postgres`).
     """
 
     def get(self, request) -> Response:
         query = request.query_params.get("q", "").strip()
-        page_size = min(int(request.query_params.get("page_size", 24)), 100)
-
         if not query:
             return Response(
                 {
                     "query": "",
                     "total": 0,
-                    "products": {"count": 0, "results": []},
-                    "entities": {"count": 0, "results": []},
+                    "hits": [],
+                    "facets": {},
+                    "took_ms": 0,
+                    "backend": "postgres",
                 }
             )
 
-        products = (
-            Product.objects.filter(is_active=True)
-            .select_related("entity", "entity__brand")
-            .filter(
-                Q(title__icontains=query)
-                | Q(title_fa__icontains=query)
-                | Q(sku__icontains=query)
-                | Q(entity__title__icontains=query)
-                | Q(entity__title_fa__icontains=query)
-            )
-            .distinct()
-            .order_by("price")[:page_size]
-        )
+        limit = min(int(request.query_params.get("page_size", 24)), 100)
+        in_stock_param = request.query_params.get("in_stock")
+        in_stock = None
+        if in_stock_param in {"true", "1", "yes"}:
+            in_stock = True
+        elif in_stock_param in {"false", "0", "no"}:
+            in_stock = False
 
-        entities = (
-            Entity.objects.filter(is_active=True)
-            .select_related("brand", "category")
-            .filter(
-                Q(title__icontains=query)
-                | Q(title_fa__icontains=query)
-                | Q(summary__icontains=query)
-                | Q(summary_fa__icontains=query)
-                | Q(aliases__icontains=query)
-            )
-            .distinct()
-            .order_by("title")[:page_size]
+        response = service.search(
+            query,
+            limit=limit,
+            entity_type=request.query_params.get("type") or None,
+            brand=request.query_params.get("brand") or None,
+            in_stock=in_stock,
+            kind=request.query_params.get("kind") or None,
         )
-
-        product_rows = list(products)
-        entity_rows = list(entities)
-
-        return Response(
-            {
-                "query": query,
-                "total": len(product_rows) + len(entity_rows),
-                "products": {
-                    "count": len(product_rows),
-                    "results": ProductSerializer(product_rows, many=True).data,
-                },
-                "entities": {
-                    "count": len(entity_rows),
-                    "results": EntityListSerializer(entity_rows, many=True).data,
-                },
-            }
-        )
+        return Response(response.as_dict())
 
 
 class SearchAutocompleteView(APIView):
-    """Prefix suggestions for the search box.
+    """`GET /api/v1/search/autocomplete/?q=<prefix>`
 
-    Phase 3 replaces this with the Meilisearch autocomplete endpoint; the
-    response shape is kept stable.
+    Minimum two characters.
     """
 
     def get(self, request) -> Response:
         query = request.query_params.get("q", "").strip()
         if len(query) < 2:
             return Response({"query": query, "suggestions": []})
-
-        titles = (
-            Entity.objects.filter(is_active=True)
-            .filter(Q(title__icontains=query) | Q(title_fa__icontains=query))
-            .values_list("title_fa", "title", "slug")
-            .distinct()[:10]
-        )
-        suggestions = [
-            {"text": fa or title, "slug": slug} for fa, title, slug in titles if (fa or title)
-        ]
+        suggestions = service.autocomplete(query)
         return Response({"query": query, "suggestions": suggestions})
 
 
-class CatalogSearchListView(generics.ListAPIView):
-    """A paginated products-only variant, for callers that want DRF pagination."""
+class FacetView(APIView):
+    """`GET /api/v1/search/facets/` — the facet sources for the filter UI.
 
-    serializer_class = ProductSerializer
-    pagination_class = DefaultPagination
+    Returned independently of a query so the filter panel can be rendered
+    before the user types anything.
+    """
 
-    def get_queryset(self):
-        query = self.request.query_params.get("q", "").strip()
-        qs = Product.objects.filter(is_active=True).select_related("entity")
-        if query:
-            qs = qs.filter(
-                Q(title__icontains=query)
-                | Q(title_fa__icontains=query)
-                | Q(sku__icontains=query)
-                | Q(entity__title__icontains=query)
-            )
-        return qs.distinct().order_by("price")
+    def get(self, request) -> Response:
+        from apps.catalog.models import Brand, Entity, Product
+
+        # Every brand that has at least one active entity, with its count.
+        brands = [
+            {
+                "slug": brand.slug,
+                "name": brand.name,
+                "name_fa": brand.name_fa,
+                "count": brand.entities.filter(is_active=True).count(),
+            }
+            for brand in Brand.objects.filter(entities__is_active=True).distinct().order_by("name")
+        ]
+
+        return Response(
+            {
+                "brands": brands,
+                "types": [
+                    {
+                        "value": value,
+                        "label": label,
+                        "count": Entity.objects.filter(type=value, is_active=True).count(),
+                    }
+                    for value, label in _type_choices()
+                ],
+                "in_stock": {
+                    "yes": Product.objects.filter(is_active=True, stock__gt=0).count(),
+                    "no": Product.objects.filter(is_active=True, stock=0).count(),
+                },
+            }
+        )
+
+
+def _type_choices() -> list[tuple[str, str]]:
+    """The entity types and their Persian labels."""
+    from apps.catalog.models import EntityType
+
+    return [(value, label) for value, label in EntityType.choices]

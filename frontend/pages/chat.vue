@@ -26,7 +26,7 @@ useSeoMeta({
   <div class="mx-auto max-w-3xl">
     <h1 class="mb-1 text-2xl font-bold">دستیار هوشمند</h1>
     <p class="mb-6 text-sm text-slate-500">
-      پاسخ‌ها فقط از مستندات و دادهٔ فروشگاه ساخته می‌شوند و هر ادعا ارجاع دارد.
+      پاسخ‌ها فقط از ابزارها و مستندات فروشگاه ساخته می‌شوند و هر ادعا ارجاع دارد.
     </p>
 
     <div v-if="messages.length === 0" class="rounded-xl border border-dashed border-slate-300 p-8">
@@ -60,19 +60,21 @@ useSeoMeta({
 
         <p v-if="message.error" class="text-sm text-rose-600">{{ message.error }}</p>
 
+        <p v-else-if="message.clarifyingQuestion" class="leading-8 text-slate-800">
+          {{ message.clarifyingQuestion }}
+        </p>
+
         <p v-else class="whitespace-pre-line leading-8 text-slate-800">
           {{ message.text }}
           <span v-if="message.pending" class="inline-block w-1.5 animate-pulse bg-slate-400" />
         </p>
 
+        <ProductCardsRow v-if="message.cards?.length" :cards="message.cards" />
+
         <div v-if="message.citations?.length" class="mt-4 border-t border-slate-100 pt-3">
           <p class="mb-2 text-xs font-medium text-slate-500">منابع:</p>
           <ul class="space-y-1">
-            <li
-              v-for="citation in message.citations"
-              :key="citation.index"
-              class="text-sm"
-            >
+            <li v-for="citation in message.citations" :key="citation.index" class="text-sm">
               <a
                 :href="citation.url"
                 class="text-brand-700 underline underline-offset-2 hover:text-brand-800"

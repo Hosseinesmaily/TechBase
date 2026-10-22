@@ -3,7 +3,7 @@
 Interactive knowledge base + dynamic wiki + agentic RAG assistant for a PC hardware retailer.
 **Persian-first** (UI, content, answers), English supported.
 
-> Status: **Phase 4 (RAG MVP) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
+> Status: **Phase 5 (agentic layer) done** — see [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Stack
 
@@ -28,6 +28,7 @@ Services:
 | Frontend (Nuxt SSR) | http://localhost:3000 |
 | Catalog (Nuxt page) | http://localhost:3000/catalog |
 | Wiki (Nuxt page) | http://localhost:3000/wiki |
+| Assistant (Nuxt page) | http://localhost:3000/chat |
 | API | http://localhost:8000/api/v1/ |
 | OpenAPI docs | http://localhost:8000/api/docs/ |
 | Editorial CMS (Wagtail) | http://localhost:8000/cms/ |
@@ -73,7 +74,8 @@ The backend runs `migrate` + `collectstatic` automatically on startup.
    without it the search falls back to PostgreSQL and still works).
 8. `make index-content` — chunk and embed the wiki pages for the assistant.
 9. Ask the assistant at http://localhost:3000/chat — the answer carries
-   citations that link to the exact section it came from.
+   product cards and citations that link to the exact section it came from.
+   Ask without a budget and it asks one clarifying question first.
 
 ### Evaluate the assistant
 
@@ -83,6 +85,16 @@ make eval        # the golden set: 30 Persian + 10 English questions
 
 Reports the retrieval hit-rate, the answer quality, the citation rate and
 the guardrail pass rate, per language, and lists the failures.
+
+### How the assistant is kept honest
+
+| Rule | How it is enforced |
+|---|---|
+| A price or a stock count is **never** from the model's memory | Every number in a price/stock sentence is checked against the tool results; a mismatch replaces the answer |
+| Compatibility is **never** decided by a model | The verdict comes from the deterministic rule engine and is quoted verbatim |
+| Every wiki claim carries a citation | An answer without a citation marker is rejected |
+| Retrieved content is data, not instructions | Instruction-like lines are stripped before the content reaches the prompt |
+| When the data is insufficient, it says so | No tool output → an explicit "not enough information" answer |
 
 ### Try the API directly
 

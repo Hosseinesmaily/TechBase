@@ -343,6 +343,68 @@ hybrid retrieval, SSE chat, citations, evaluation harness + golden set).
 **Next**: Phase 5 (agentic layer: query understanding, the four tools,
 clarifying questions, product cards in the chat, comparison view).
 
+---
+
+## Phase 5 — Agentic layer — ✅ done (2026-10-22)
+
+**Done**
+- **Query understanding** (`apps/ai/understanding.py`): the question becomes a
+  structured request — use_case, resolution, fps_target, budget_max, language,
+  missing_info, clarifying_question. The model returns strict JSON; the
+  heuristics (regex + stopwords, Persian-digit aware) are both the fallback
+  without a model and the safety net when the JSON is unusable.
+- **The four tools** (`apps/ai/tools.py`):
+  - `search_products(filters)` — the catalog, with the price, the stock and the
+    last-updated date;
+  - `get_benchmarks(component, resolution)` — the measured frame rates;
+  - `check_compatibility(parts)` — the **deterministic rule engine**, never a
+    model;
+  - `search_wiki(query)` — the hybrid wiki search, and the source of the
+    citations.
+  Every tool returns plain data, and every number in it is a fact the answer is
+  allowed to state.
+- **The orchestrator** (`apps/ai/orchestrator.py`): understand → if something
+  critical is missing, ask **one** clarifying question and stop → run the
+  tools → build the answer from the tool outputs only → guardrails → text +
+  product cards + citations.
+- **The tool plan is derived from the understanding**, not from the model: a
+  shopping intent searches the prebuilts, a budget becomes a filter, a frame
+  rate target reads the benchmarks.
+- **Product cards** in the chat answer, and **`POST /api/v1/ai/compare/`**:
+  two products side by side — price, stock, the union of their specs and the
+  measured frame rates.
+- **Frontend**: the chat shows the cards, the citations and the clarifying
+  question; a `/compare` page puts two products next to each other.
+
+**Verified on this host**
+- `pytest` → **361 passed** ✓ (agentic 44, chat 23, guardrails 23, chunking 16,
+  evaluation 18)
+- `ruff check` + `format --check` → clean ✓ · `mypy apps` → no issues in 122 files ✓
+- `npm run typecheck` ✓
+- `manage.py run_evals` → retrieval 97.5%, answer 100%, citations 100%,
+  guardrails 100% — unchanged by the agentic layer
+- Live API: "سیستم گیمینگ ۱۰۸۰p با بودجه ۵۰ میلیون" → the understanding is
+  `{gaming, 1080p, 50000000}`, three tools run, 4 product cards and 6
+  citations come back; "یک سیستم خوب می‌خواهم" → one clarifying question and
+  **no** tool call ✓
+
+**Bugs found and fixed during the phase**
+- The understanding regexes did not fold the Persian digits, so "۱۴۴۰p" and
+  "۵۰ میلیون" were not read.
+- The tool registry was typed as a dict of callables of different signatures,
+  which mypy rejected.
+
+**Open questions**
+- None blocking. The `search_wiki` tool searches the chunk store, not the
+  Meilisearch index — the two are equivalent in content, and the chunk store
+  is what carries the section structure the citations need.
+- The tools run sequentially. They are independent, so they could run in
+  parallel; the order is kept stable so the tests stay deterministic.
+
+**Next**: Phase 6 (hardening: semantic cache, rate limiting, observability,
+security review, load test, production compose and deploy docs).
+
+
 
 
 

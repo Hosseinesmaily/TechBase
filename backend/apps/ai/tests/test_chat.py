@@ -153,13 +153,19 @@ class TestStreamAnswer:
 
 
 class TestChatApi:
+    """The chat API now runs the agentic flow, so the query has to carry
+    enough information for the assistant not to ask a clarifying question."""
+
     def test_a_json_answer(self, api, indexed, monkeypatch):
         monkeypatch.setattr(
-            "apps.ai.chat.get_llm", lambda task="chat": ScriptedLLM("پاسخ آزمایشی [1].")
+            "apps.ai.orchestrator.get_llm", lambda task="chat": ScriptedLLM("پاسخ آزمایشی [1].")
         )
         response = api.post(
             reverse("ai:chat"),
-            {"query": "حافظه DDR5 چیست؟", "stream": False},
+            {
+                "query": "حافظه DDR5 برای گیمینگ با بودجه ۵۰ میلیون",
+                "stream": False,
+            },
             format="json",
         )
         assert response.status_code == 200
@@ -172,11 +178,14 @@ class TestChatApi:
 
     def test_the_stream_returns_sse_events(self, api, indexed, monkeypatch):
         monkeypatch.setattr(
-            "apps.ai.chat.get_llm", lambda task="chat": ScriptedLLM("پاسخ آزمایشی [1].")
+            "apps.ai.orchestrator.get_llm", lambda task="chat": ScriptedLLM("پاسخ آزمایشی [1].")
         )
         response = api.post(
             reverse("ai:chat"),
-            {"query": "حافظه DDR5 چیست؟", "stream": True},
+            {
+                "query": "حافظه DDR5 برای گیمینگ با بودجه ۵۰ میلیون",
+                "stream": True,
+            },
             format="json",
         )
         assert response.status_code == 200

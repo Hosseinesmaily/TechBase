@@ -2,33 +2,38 @@
  * The chat client: POSTs the question and consumes the SSE stream.
  *
  * The event types mirror the backend: `citations`, `token`, `replace`,
- * `guardrails`, `done` and `error`.
+ * `guardrails`, `done` and `error` — plus `clarifying_question` for the
+ * agentic flow.
  */
 
-export interface ChatCitation {
-  index: number
-  page_slug: string
-  page_title: string
-  section_path: string
-  heading: string
-  url: string
-  entity_slug: string | null
-  score: number
-}
+import type { AgentCitation, ProductCardData, Understanding } from "~/types/agent"
 
 export interface ChatMessage {
   role: "user" | "assistant"
   text: string
-  citations?: ChatCitation[]
+  citations?: AgentCitation[]
+  cards?: ProductCardData[]
+  understanding?: Understanding
   guardrails?: { ok: boolean; note?: string; [key: string]: unknown }
+  clarifyingQuestion?: string
   pending?: boolean
   error?: string
 }
 
 interface StreamEvent {
-  type: "citations" | "token" | "replace" | "guardrails" | "done" | "error"
-  citations?: ChatCitation[]
+  type:
+    | "citations"
+    | "token"
+    | "replace"
+    | "guardrails"
+    | "done"
+    | "error"
+    | "clarifying_question"
+  citations?: AgentCitation[]
+  cards?: ProductCardData[]
+  understanding?: Understanding
   text?: string
+  question?: string
   guardrails?: { ok: boolean; [key: string]: unknown }
   message?: string
   latency_ms?: number
@@ -87,8 +92,8 @@ export function useChat() {
     } catch (error) {
       assistant.error =
         error instanceof Error ? error.message : "ارتباط با سرور برقرار نشد."
-      assistant.pending = false
     } finally {
+      assistant.pending = false
       streaming.value = false
     }
   }
@@ -109,6 +114,8 @@ export function useChat() {
     switch (event.type) {
       case "citations":
         assistant.citations = event.citations ?? []
+        assistant.cards = event.cards ?? []
+        assistant.understanding = event.understanding
         break
       case "token":
         assistant.text += event.text ?? ""
@@ -119,6 +126,9 @@ export function useChat() {
         break
       case "guardrails":
         assistant.guardrails = event.guardrails
+        break
+      case "clarifying_question":
+        assistant.clarifyingQuestion = event.question ?? ""
         break
       case "error":
         assistant.error = event.message ?? "خطای ناشناخته"

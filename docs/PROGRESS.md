@@ -450,6 +450,17 @@ security review, load test, production compose and deploy docs).
   API contains full-name links to the board, CPU and DDR5 pages, and the
   rendered HTML no longer contains the hover card.
 
+## Catalog product-name cleanup (2026-10-24)
+
+- Standardized seeded component product titles as Persian category + brand +
+  model + verified key specification; prebuilt names now follow the same
+  category/model ordering.
+- The example ASUS ROG Astral RTX 5090 OC is not in the current catalog, so no
+  fake SKU, price or stock was introduced. Search reindex reports Meilisearch
+  unavailable on this host; PostgreSQL search reads the updated titles.
+- Verification: catalog seed tests → 16 passed; Ruff check/format clean. Local
+  search returns the standardized GPU and prebuilt titles through PostgreSQL.
+
 
 
 

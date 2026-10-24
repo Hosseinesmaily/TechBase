@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 
 from django.http import StreamingHttpResponse
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -33,6 +33,12 @@ class ChatView(APIView):
 
     Body: `{"query": "...", "language": "fa", "stream": true, "ask_clarifying": true}`
     """
+
+    # Chat is intentionally public and rate-limited by IP. Ignore Django admin
+    # session cookies: SessionAuthentication would require a CSRF token that
+    # the same-origin SSE client does not need to send for this public endpoint.
+    authentication_classes: list = []
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request) -> Response | StreamingHttpResponse:
         query = str(request.data.get("query", "")).strip()

@@ -495,6 +495,18 @@ security review, load test, production compose and deploy docs).
   Nuxt typecheck/build and catalog/wiki tests; the rendered product heading now
   has an RTL Persian wrapper and an isolated LTR model fragment.
 
+## Public chat 403 fix (2026-10-24)
+
+- Diagnosed the likely cause: when a Django-authenticated session cookie is
+  included, DRF's default SessionAuthentication enforces CSRF on the public chat
+  POST, but the same-origin SSE client does not send a CSRF token.
+- Disabled session authentication explicitly for public chat; the endpoint
+  remains AllowAny and continues to use the configured chat rate limit.
+- Added a regression test that logs in through a session with CSRF enforcement
+  enabled and confirms a chat POST succeeds without a CSRF token.
+- Verification: all 12 chat tests pass; Ruff check and format pass. A direct
+  anonymous POST through the local Nuxt proxy also returns HTTP 200.
+
 
 
 

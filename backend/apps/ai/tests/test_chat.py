@@ -172,6 +172,27 @@ class TestChatApi:
         assert response.data["answer"]
         assert response.data["citations"]
 
+    def test_chat_works_with_an_authenticated_session_without_csrf(self, indexed, monkeypatch):
+        """An admin session cookie must not turn public chat into a CSRF failure."""
+        from django.contrib.auth import get_user_model
+
+        monkeypatch.setattr(
+            "apps.ai.orchestrator.get_llm", lambda task="chat": ScriptedLLM("پاسخ آزمایشی [1].")
+        )
+        user_model = get_user_model()
+        user_model.objects.create_user(username="chat-session", password="test-password")
+        client = APIClient(enforce_csrf_checks=True)
+        assert client.login(username="chat-session", password="test-password")
+
+        response = client.post(
+            reverse("ai:chat"),
+            {"query": "حافظه DDR5 برای گیمینگ با بودجه ۵۰ میلیون", "stream": False},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        assert response.data["answer"]
+
     def test_a_missing_query_is_a_bad_request(self, api, indexed):
         response = api.post(reverse("ai:chat"), {}, format="json")
         assert response.status_code == 400

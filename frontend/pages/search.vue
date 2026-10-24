@@ -262,7 +262,7 @@ const backendLabel = computed(() => {
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <p class="font-medium">{{ hit.title }}</p>
-                  <p v-if="hit.subtitle" class="mt-0.5 truncate text-sm text-slate-500">{{ hit.subtitle }}</p>
+                  <p v-if="hit.subtitle && hit.kind !== 'product'" class="mt-0.5 truncate text-sm text-slate-500">{{ hit.subtitle }}</p>
                   <p v-if="hit.recommendation_reason" class="mt-1 text-xs text-brand-700">{{ hit.recommendation_reason }}</p>
                 </div>
                 <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ KIND_LABELS[hit.kind] ?? hit.kind }}</span>

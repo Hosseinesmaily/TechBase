@@ -43,7 +43,7 @@ def catalog():
         sku="tb-gpu-4060",
         entity=gpu,
         title="RTX 4060",
-        title_fa="کارت RTX 4060",
+        title_fa="کارت گرافیک NVIDIA GeForce RTX 4060",
         price="18900000",
         stock=18,
     )
@@ -102,6 +102,27 @@ class TestReciprocalRankFusion:
         assert fused[0].score > 0
 
 
+class TestMeilisearchConversion:
+    def test_product_result_does_not_repeat_its_entity_title(self):
+        results = service._meili_to_results(
+            {
+                "hits": [
+                    {
+                        "id": "product-1",
+                        "slug": "tb-gpu-4060",
+                        "kind": "product",
+                        "title_fa": "کارت گرافیک NVIDIA GeForce RTX 4060",
+                        "summary_fa": "انویدیا جی‌فورس RTX 4060",
+                    }
+                ]
+            },
+            "product",
+        )
+
+        assert results[0].title == "کارت گرافیک NVIDIA GeForce RTX 4060"
+        assert results[0].subtitle == ""
+
+
 class TestPostgresSearch:
     def test_finds_by_latin_name(self, catalog):
         response = postgres.search("RTX 4060")
@@ -116,6 +137,12 @@ class TestPostgresSearch:
     def test_finds_by_number(self, catalog):
         response = postgres.search("4060")
         assert response.total > 0
+
+    def test_product_hit_does_not_repeat_the_entity_name_as_a_subtitle(self, catalog):
+        response = postgres.search("RTX 4060", kind="product")
+        product = next(hit for hit in response.hits if hit.kind == "product")
+        assert product.title == "کارت گرافیک NVIDIA GeForce RTX 4060"
+        assert product.subtitle == ""
 
     def test_search_is_case_insensitive(self, catalog):
         assert postgres.search("rtx").total == postgres.search("RTX").total

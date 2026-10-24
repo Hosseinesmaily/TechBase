@@ -735,7 +735,7 @@ PRODUCTS = [
     (
         "tb-cpu-7800x3d",
         "ryzen-7-7800x3d",
-        "پردازندهٔ ای‌ام‌دی مدل Ryzen 7 7800X3D",
+        "پردازنده AMD Ryzen 7 7800X3D",
         24500000,
         12,
         36,
@@ -743,7 +743,7 @@ PRODUCTS = [
     (
         "tb-cpu-7600",
         "ryzen-5-7600",
-        "پردازندهٔ ای‌ام‌دی مدل Ryzen 5 7600",
+        "پردازنده AMD Ryzen 5 7600",
         15800000,
         30,
         36,
@@ -751,7 +751,7 @@ PRODUCTS = [
     (
         "tb-cpu-7950x",
         "ryzen-9-7950x",
-        "پردازندهٔ ای‌ام‌دی مدل Ryzen 9 7950X",
+        "پردازنده AMD Ryzen 9 7950X",
         42500000,
         5,
         36,
@@ -759,7 +759,7 @@ PRODUCTS = [
     (
         "tb-cpu-13400f",
         "core-i5-13400f",
-        "پردازندهٔ اینتل مدل Core i5-13400F",
+        "پردازنده Intel Core i5-13400F",
         13500000,
         22,
         36,
@@ -767,7 +767,7 @@ PRODUCTS = [
     (
         "tb-cpu-14700k",
         "core-i7-14700k",
-        "پردازندهٔ اینتل مدل Core i7-14700K",
+        "پردازنده Intel Core i7-14700K",
         29500000,
         8,
         36,
@@ -775,7 +775,7 @@ PRODUCTS = [
     (
         "tb-gpu-4060",
         "rtx-4060",
-        "کارت گرافیک انویدیا مدل GeForce RTX 4060، حافظهٔ ۸ گیگابایت",
+        "کارت گرافیک NVIDIA GeForce RTX 4060، حافظه ۸ گیگابایت",
         18900000,
         18,
         36,
@@ -783,7 +783,7 @@ PRODUCTS = [
     (
         "tb-gpu-4070s",
         "rtx-4070-super",
-        "کارت گرافیک انویدیا مدل GeForce RTX 4070 SUPER، حافظهٔ ۱۲ گیگابایت",
+        "کارت گرافیک NVIDIA GeForce RTX 4070 SUPER، حافظه ۱۲ گیگابایت",
         32900000,
         9,
         36,
@@ -791,7 +791,7 @@ PRODUCTS = [
     (
         "tb-gpu-4080s",
         "rtx-4080-super",
-        "کارت گرافیک انویدیا مدل GeForce RTX 4080 SUPER، حافظهٔ ۱۶ گیگابایت",
+        "کارت گرافیک NVIDIA GeForce RTX 4080 SUPER، حافظه ۱۶ گیگابایت",
         58900000,
         3,
         36,
@@ -799,7 +799,7 @@ PRODUCTS = [
     (
         "tb-gpu-7600",
         "rx-7600",
-        "کارت گرافیک ای‌ام‌دی مدل Radeon RX 7600، حافظهٔ ۸ گیگابایت",
+        "کارت گرافیک AMD Radeon RX 7600، حافظه ۸ گیگابایت",
         17200000,
         14,
         36,
@@ -807,7 +807,7 @@ PRODUCTS = [
     (
         "tb-gpu-7800xt",
         "rx-7800-xt",
-        "کارت گرافیک ای‌ام‌دی مدل Radeon RX 7800 XT، حافظهٔ ۱۶ گیگابایت",
+        "کارت گرافیک AMD Radeon RX 7800 XT، حافظه ۱۶ گیگابایت",
         31500000,
         7,
         36,
@@ -815,7 +815,7 @@ PRODUCTS = [
     (
         "tb-ram-32-6000",
         "corsair-vengeance-rgb-32gb-ddr5-6000",
-        "حافظهٔ رم کورسیر مدل Vengeance RGB، ظرفیت ۳۲ گیگابایت، DDR5-6000",
+        "حافظه Corsair Vengeance RGB، ظرفیت ۳۲ گیگابایت، DDR5-6000",
         4200000,
         40,
         60,
@@ -823,7 +823,7 @@ PRODUCTS = [
     (
         "tb-ram-16-6000",
         "corsair-vengeance-rgb-16gb-ddr5-6000",
-        "حافظهٔ رم کورسیر مدل Vengeance RGB، ظرفیت ۱۶ گیگابایت، DDR5-6000",
+        "حافظه Corsair Vengeance RGB، ظرفیت ۱۶ گیگابایت، DDR5-6000",
         2450000,
         35,
         60,
@@ -831,7 +831,7 @@ PRODUCTS = [
     (
         "tb-ram-32-3200",
         "kingston-fury-beast-32gb-ddr4-3200",
-        "حافظهٔ رم کینگستون مدل FURY Beast، ظرفیت ۳۲ گیگابایت، DDR4-3200",
+        "حافظه Kingston FURY Beast، ظرفیت ۳۲ گیگابایت، DDR4-3200",
         3800000,
         25,
         60,
@@ -839,7 +839,7 @@ PRODUCTS = [
     (
         "tb-mb-b650plus",
         "asus-tuf-gaming-b650-plus",
-        "مادربرد ایسوس مدل TUF Gaming B650-PLUS WiFi، سوکت AM5",
+        "مادربرد ASUS TUF Gaming B650-PLUS WiFi",
         9800000,
         16,
         36,
@@ -847,7 +847,7 @@ PRODUCTS = [
     (
         "tb-mb-b650tomahawk",
         "msi-mag-b650-tomahawk",
-        "مادربرد ام‌اس‌آی مدل MAG B650 Tomahawk WiFi، سوکت AM5",
+        "مادربرد MSI MAG B650 Tomahawk WiFi",
         10500000,
         11,
         36,
@@ -855,7 +855,7 @@ PRODUCTS = [
     (
         "tb-mb-b760mds3h",
         "gigabyte-b760m-ds3h",
-        "مادربرد گیگابایت مدل B760M DS3H، سوکت LGA1700",
+        "مادربرد GIGABYTE B760M DS3H",
         6200000,
         20,
         36,
@@ -863,7 +863,7 @@ PRODUCTS = [
     (
         "tb-psu-rm650x",
         "corsair-rm650x",
-        "منبع تغذیهٔ کورسیر مدل RM650x، توان ۶۵۰ وات",
+        "منبع تغذیه Corsair RM650x، توان ۶۵۰ وات",
         6100000,
         19,
         120,
@@ -871,7 +871,7 @@ PRODUCTS = [
     (
         "tb-psu-rm850x",
         "corsair-rm850x",
-        "منبع تغذیهٔ کورسیر مدل RM850x، توان ۸۵۰ وات",
+        "منبع تغذیه Corsair RM850x، توان ۸۵۰ وات",
         7900000,
         13,
         120,
@@ -879,25 +879,25 @@ PRODUCTS = [
     (
         "tb-psu-rm450",
         "corsair-rm450",
-        "منبع تغذیهٔ کورسیر مدل RM450، توان ۴۵۰ وات",
+        "منبع تغذیه Corsair RM450، توان ۴۵۰ وات",
         3900000,
         17,
         60,
     ),
-    ("tb-case-h5flow", "nzxt-h5-flow", "کیس NZXT مدل H5 Flow", 6200000, 10, 24),
+    ("tb-case-h5flow", "nzxt-h5-flow", "کیس NZXT H5 Flow", 6200000, 10, 24),
     (
         "tb-case-lancool216",
         "lian-li-lancool-216",
-        "کیس لیان‌لی مدل Lancool 216",
+        "کیس Lian Li Lancool 216",
         9400000,
         6,
         24,
     ),
-    ("tb-case-h7", "nzxt-h7", "کیس NZXT مدل H7", 7800000, 8, 24),
+    ("tb-case-h7", "nzxt-h7", "کیس NZXT H7", 7800000, 8, 24),
     (
         "tb-cooler-hyper212",
         "cooler-master-hyper-212",
-        "خنک‌کنندهٔ پردازندهٔ کولر مستر مدل Hyper 212 Black",
+        "خنک‌کننده Cooler Master Hyper 212 Black",
         2450000,
         26,
         60,
@@ -905,7 +905,7 @@ PRODUCTS = [
     (
         "tb-cooler-kraken360",
         "nzxt-kraken-360",
-        "خنک‌کنندهٔ مایع NZXT مدل Kraken Elite 360 RGB",
+        "خنک‌کننده مایع NZXT Kraken Elite 360 RGB",
         11500000,
         4,
         60,
@@ -913,7 +913,7 @@ PRODUCTS = [
     (
         "tb-ssd-990pro2tb",
         "samsung-990-pro-2tb",
-        "حافظهٔ SSD سامسونگ مدل 990 Pro، ظرفیت ۲ ترابایت",
+        "SSD Samsung 990 Pro، ظرفیت ۲ ترابایت",
         4900000,
         21,
         60,
@@ -921,7 +921,7 @@ PRODUCTS = [
     (
         "tb-ssd-sn5801tb",
         "wd-blue-sn580-1tb",
-        "حافظهٔ SSD وسترن دیجیتال مدل Blue SN580، ظرفیت ۱ ترابایت",
+        "SSD WD Blue SN580، ظرفیت ۱ ترابایت",
         2950000,
         33,
         60,
@@ -935,7 +935,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-striker-1080",
         "title": "TechBase Striker 1080",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Striker 1080، مناسب بازی 1080p",
+        "title_fa": "سیستم گیمینگ TechBase Striker 1080، مناسب بازی 1080p",
         "summary_fa": "سیستم گیمینگ ۱۰۸۰p با فریم‌ریت بالا؛ مناسب رقابتی و استریم.",
         "price": 48900000,
         "stock": 6,
@@ -960,7 +960,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-vanguard-1080",
         "title": "TechBase Vanguard 1080",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Vanguard 1080، مناسب بازی 1080p",
+        "title_fa": "سیستم گیمینگ TechBase Vanguard 1080، مناسب بازی 1080p",
         "summary_fa": "سیستم گیمینگ ۱۰۸۰p با پردازندهٔ ۸۰۰۰X3D؛ بالاترین فریم‌ریت در بازی‌های رقابتی.",
         "price": 68500000,
         "stock": 4,
@@ -985,7 +985,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-phantom-1440",
         "title": "TechBase Phantom 1440",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Phantom 1440، مناسب بازی 1440p",
+        "title_fa": "سیستم گیمینگ TechBase Phantom 1440، مناسب بازی 1440p",
         "summary_fa": "سیستم گیمینگ ۱۴۴۰p با RTX 4070 SUPER؛ انتخاب متعادل برای گیمینگ جدید.",
         "price": 98900000,
         "stock": 3,
@@ -1010,7 +1010,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-valor-1440",
         "title": "TechBase Valor 1440",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Valor 1440، مناسب بازی 1440p",
+        "title_fa": "سیستم گیمینگ TechBase Valor 1440، مناسب بازی 1440p",
         "summary_fa": "سیستم گیمینگ ۱۴۴۰p با RTX 4070 SUPER و پردازندهٔ ۱۴۷۰۰K.",
         "price": 108500000,
         "stock": 2,
@@ -1035,7 +1035,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-apex-4k",
         "title": "TechBase Apex 4K",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Apex 4K، مناسب بازی 4K",
+        "title_fa": "سیستم گیمینگ TechBase Apex 4K، مناسب بازی 4K",
         "summary_fa": "سیستم گیمینگ ۴K با RTX 4080 SUPER و ۳۲ گیگابایت حافظه.",
         "price": 159900000,
         "stock": 1,
@@ -1060,7 +1060,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-legend-1440",
         "title": "TechBase Legend 1440",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Legend 1440، مناسب بازی 1440p",
+        "title_fa": "سیستم گیمینگ TechBase Legend 1440، مناسب بازی 1440p",
         "summary_fa": "سیستم گیمینگ ۱۴۴۰p با AMD؛ گزینه‌ای ارزشمند برای نرخ فریم به ازای هر تومان.",
         "price": 92500000,
         "stock": 5,
@@ -1085,7 +1085,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-nomad-office",
         "title": "TechBase Nomad Office",
-        "title_fa": "سیستم اداری تک‌بیس مدل Nomad Office",
+        "title_fa": "سیستم اداری TechBase Nomad Office",
         "summary_fa": "سیستم اداری بی‌صدا با پردازندهٔ کم‌مصرف و گرافیک مجتمع.",
         "price": 27900000,
         "stock": 8,
@@ -1110,7 +1110,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-drifter-1080",
         "title": "TechBase Drifter 1080",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Drifter 1080، مناسب بازی 1080p",
+        "title_fa": "سیستم گیمینگ TechBase Drifter 1080، مناسب بازی 1080p",
         "summary_fa": "سیستم گیمینگ اقتصادی ۱۰۸۰p با Radeon RX 7600.",
         "price": 39500000,
         "stock": 7,
@@ -1135,7 +1135,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-ranger-1080",
         "title": "TechBase Ranger 1080",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Ranger 1080، مناسب بازی 1080p",
+        "title_fa": "سیستم گیمینگ TechBase Ranger 1080، مناسب بازی 1080p",
         "summary_fa": "سیستم گیمینگ ۱۰۸۰p با i5-13400F و RTX 4060؛ کاربری عمومی و گیم.",
         "price": 41500000,
         "stock": 6,
@@ -1160,7 +1160,7 @@ PREBUILTS: list[PrebuiltSeed] = [
     {
         "slug": "tb-prebuilt-horizon-1440",
         "title": "TechBase Horizon 1440",
-        "title_fa": "سیستم گیمینگ تک‌بیس مدل Horizon 1440، مناسب بازی 1440p",
+        "title_fa": "سیستم گیمینگ TechBase Horizon 1440، مناسب بازی 1440p",
         "summary_fa": "سیستم گیمینگ ۱۴۴۰p با RTX 4080 SUPER و ۱۶ گیگابایت حافظهٔ گرافیک.",
         "price": 145900000,
         "stock": 2,

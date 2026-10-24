@@ -82,7 +82,9 @@ def _meili_to_results(raw: dict[str, Any], kind: str) -> list[SearchResult]:
                 id=str(hit.get("id", "")),
                 slug=hit.get("slug", ""),
                 title=hit.get("title_fa") or hit.get("title", ""),
-                subtitle=hit.get("summary_fa") or hit.get("summary", ""),
+                subtitle=(
+                    "" if kind == "product" else hit.get("summary_fa") or hit.get("summary", "")
+                ),
                 kind=hit.get("kind", kind),
                 score=0.0,
                 price=hit.get("price"),

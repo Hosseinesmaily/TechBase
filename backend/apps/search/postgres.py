@@ -118,7 +118,9 @@ def search(
                     id=str(product.id),
                     slug=product.sku,
                     title=product.display_title,
-                    subtitle=product.entity.display_title,
+                    # The product name already includes the make/model; showing
+                    # the entity title below it repeats the same name.
+                    subtitle="",
                     kind="product",
                     score=0.9,
                     price=str(product.price),

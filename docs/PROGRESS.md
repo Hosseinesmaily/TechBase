@@ -452,14 +452,16 @@ security review, load test, production compose and deploy docs).
 
 ## Catalog product-name cleanup (2026-10-24)
 
-- Standardized seeded component product titles as Persian category + brand +
-  model + verified key specification; prebuilt names now follow the same
+- Standardized seeded product titles as Persian category + canonical
+  manufacturer/model + verified key specification; product search results no
+  longer repeat the entity title underneath. Prebuilt names follow the same
   category/model ordering.
 - The example ASUS ROG Astral RTX 5090 OC is not in the current catalog, so no
   fake SKU, price or stock was introduced. Search reindex reports Meilisearch
   unavailable on this host; PostgreSQL search reads the updated titles.
-- Verification: catalog seed tests → 16 passed; Ruff check/format clean. Local
-  search returns the standardized GPU and prebuilt titles through PostgreSQL.
+- Verification: catalog + search tests → 52 passed; Ruff check/format and Nuxt
+  typecheck clean. Local search returns the standardized GPU and prebuilt titles
+  through PostgreSQL, with no repeated entity subtitle on product hits.
 
 
 

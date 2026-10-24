@@ -63,18 +63,18 @@ class TestSeedCreatesData:
         motherboard = Product.objects.get(sku="tb-mb-b650plus")
         memory = Product.objects.get(sku="tb-ram-32-6000")
 
-        assert gpu.display_title.startswith("کارت گرافیک انویدیا مدل ")
-        assert "حافظهٔ ۱۲ گیگابایت" in gpu.display_title
-        assert motherboard.display_title.startswith("مادربرد ایسوس مدل ")
-        assert "مدل Vengeance RGB" in memory.display_title
+        assert gpu.display_title.startswith("کارت گرافیک NVIDIA GeForce RTX 4070 SUPER")
+        assert "حافظه ۱۲ گیگابایت" in gpu.display_title
+        assert motherboard.display_title.startswith("مادربرد ASUS TUF Gaming B650-PLUS")
+        assert "Corsair Vengeance RGB" in memory.display_title
         assert "ظرفیت ۳۲ گیگابایت" in memory.display_title
 
     def test_prebuilt_titles_identify_the_category_and_model(self, seeded):
         gaming_pc = Product.objects.get(sku="tb-sku-striker-1080")
         office_pc = Product.objects.get(sku="tb-sku-nomad-office")
 
-        assert gaming_pc.display_title.startswith("سیستم گیمینگ تک‌بیس مدل Striker 1080")
-        assert office_pc.display_title.startswith("سیستم اداری تک‌بیس مدل Nomad Office")
+        assert gaming_pc.display_title.startswith("سیستم گیمینگ TechBase Striker 1080")
+        assert office_pc.display_title.startswith("سیستم اداری TechBase Nomad Office")
 
 
 class TestSeedIsInternallyConsistent:

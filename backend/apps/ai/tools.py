@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from django.db.models import Avg, Q
+
 from apps.catalog.models import Entity, Product
 from apps.compat.services import check_parts
 
@@ -66,6 +68,7 @@ def search_products(
     min_price: int = 0,
     max_price: int = 0,
     in_stock: bool | None = None,
+    resolution: str = "",
     limit: int = 8,
 ) -> ToolResult:
     """Find products in the catalog.
@@ -80,6 +83,7 @@ def search_products(
         "min_price": min_price,
         "max_price": max_price,
         "in_stock": in_stock,
+        "resolution": resolution,
         "limit": limit,
     }
     try:
@@ -97,6 +101,16 @@ def search_products(
         elif in_stock is False:
             products = products.filter(stock=0)
 
+        if resolution and entity_type == "gpu":
+            products = products.annotate(
+                recommendation_fps=Avg(
+                    "entity__benchmarks__avg_fps",
+                    filter=Q(entity__benchmarks__resolution=resolution),
+                )
+            ).order_by("-recommendation_fps", "price")
+        else:
+            products = products.order_by("price")
+
         items = [
             {
                 "sku": product.sku,
@@ -111,8 +125,26 @@ def search_products(
                 "price_updated_at": (
                     product.price_updated_at.isoformat() if product.price_updated_at else None
                 ),
+                "recommendation_fps": (
+                    float(product.__dict__["recommendation_fps"])
+                    if resolution
+                    and entity_type == "gpu"
+                    and product.__dict__.get("recommendation_fps") is not None
+                    else None
+                ),
+                "recommendation_reason": (
+                    f"میانگین {product.__dict__['recommendation_fps']:g} فریم‌برثانیه در {resolution} بر اساس بنچمارک"
+                    if resolution
+                    and entity_type == "gpu"
+                    and product.__dict__.get("recommendation_fps") is not None
+                    else (
+                        "بنچمارک این رزولوشن ثبت نشده؛ بر اساس قیمت مرتب شده"
+                        if resolution and entity_type == "gpu"
+                        else "بر اساس قیمت مرتب شده"
+                    )
+                ),
             }
-            for product in products.order_by("price")[:limit]
+            for product in products[:limit]
         ]
 
         return ToolResult(
@@ -251,6 +283,10 @@ def tool_schemas() -> list[dict]:
                     "min_price": {"type": "integer", "description": "minimum price in tomans"},
                     "max_price": {"type": "integer", "description": "maximum price in tomans"},
                     "in_stock": {"type": "boolean", "description": "only available products"},
+                    "resolution": {
+                        "type": "string",
+                        "description": "rank gaming GPUs by measured average FPS at this resolution",
+                    },
                     "limit": {"type": "integer", "description": "how many products (default 8)"},
                 },
             },

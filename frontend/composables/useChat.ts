@@ -43,6 +43,7 @@ interface StreamEvent {
 export function useChat() {
   const messages = useState<ChatMessage[]>("chat-messages", () => [])
   const streaming = useState<boolean>("chat-streaming", () => false)
+  const clarificationContext = useState<string | null>("chat-clarification-context", () => null)
 
   function push(message: ChatMessage) {
     messages.value = [...messages.value, message]
@@ -51,6 +52,11 @@ export function useChat() {
   async function send(question: string) {
     const text = question.trim()
     if (!text || streaming.value) return
+
+    const queryForAgent = clarificationContext.value
+      ? `${clarificationContext.value}\nپاسخ تکمیلی کاربر: ${text}`
+      : text
+    clarificationContext.value = null
 
     push({ role: "user", text })
     const assistant: ChatMessage = { role: "assistant", text: "", pending: true }
@@ -62,9 +68,8 @@ export function useChat() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          accept: "text/event-stream",
         },
-        body: JSON.stringify({ query: text, language: "fa", stream: true }),
+        body: JSON.stringify({ query: queryForAgent, language: "fa", stream: true }),
       })
 
       if (!response.ok || !response.body) {
@@ -85,7 +90,9 @@ export function useChat() {
         while (boundary !== -1) {
           const frame = buffer.slice(0, boundary)
           buffer = buffer.slice(boundary + 2)
-          handleFrame(frame, assistant)
+          handleFrame(frame, assistant, () => {
+            clarificationContext.value = queryForAgent
+          })
           boundary = buffer.indexOf("\n\n")
         }
       }
@@ -98,7 +105,7 @@ export function useChat() {
     }
   }
 
-  function handleFrame(frame: string, assistant: ChatMessage) {
+  function handleFrame(frame: string, assistant: ChatMessage, saveClarification: () => void) {
     const dataLine = frame
       .split("\n")
       .find((line) => line.startsWith("data: "))
@@ -129,6 +136,7 @@ export function useChat() {
         break
       case "clarifying_question":
         assistant.clarifyingQuestion = event.question ?? ""
+        saveClarification()
         break
       case "error":
         assistant.error = event.message ?? "خطای ناشناخته"
@@ -140,6 +148,7 @@ export function useChat() {
 
   function reset() {
     messages.value = []
+    clarificationContext.value = null
   }
 
   return { messages, streaming, send, reset }

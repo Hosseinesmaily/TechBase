@@ -21,6 +21,8 @@ interface CompareResponse {
 }
 
 const route = useRoute()
+const router = useRouter()
+const shelf = useCustomerShelf()
 
 const skus = computed(() => {
   const raw = route.query.skus
@@ -31,7 +33,7 @@ const skus = computed(() => {
 
 const { data, pending, error } = await useAsyncData<CompareResponse>(
   "compare",
-  () =>
+  () => skus.value.length < 2 ? Promise.resolve({ products: [], specs: [], benchmarks: [] }) :
     $fetch<CompareResponse>("/api/v1/ai/compare/", {
       method: "POST",
       body: { skus: skus.value },
@@ -42,6 +44,21 @@ const { data, pending, error } = await useAsyncData<CompareResponse>(
     default: () => ({ products: [], specs: [], benchmarks: [] }),
   },
 )
+
+const selectedProducts = computed(() => shelf.compareItems.value)
+
+function beginComparison() {
+  if (selectedProducts.value.length < 2) return
+  router.push({ path: "/compare", query: { skus: selectedProducts.value.map((item) => item.sku).join(",") } })
+}
+
+function removeFromComparison(sku: string) {
+  shelf.removeCompare(sku)
+  if (skus.value.length >= 2) {
+    const remaining = skus.value.filter((item) => item !== sku)
+    router.replace(remaining.length >= 2 ? { path: "/compare", query: { skus: remaining.join(",") } } : { path: "/compare" })
+  }
+}
 
 const SPEC_LABELS: Record<string, string> = {
   socket: "سوکت",
@@ -81,10 +98,34 @@ useSeoMeta({
       قیمت، موجودی، مشخصات فنی و فریم‌ریت اندازه‌گیری‌شده — همه از دادهٔ فروشگاه.
     </p>
 
-    <p v-if="skus.length < 2" class="rounded-lg border border-dashed border-slate-300 p-8 text-center text-slate-500">
-      برای مقایسه، دست‌کم دو محصول لازم است. آدرس را به شکل
-      <code dir="ltr">/compare/?skus=sku-a,sku-b</code> بدهید.
-    </p>
+    <section v-if="skus.length < 2" class="rounded-xl border border-slate-200 bg-surface p-5">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="font-semibold">محصول‌ها را برای مقایسه انتخاب کنید</h2>
+          <p class="mt-1 text-sm text-slate-500">از کاتالوگ یا جست‌وجو «افزودن به مقایسه» را بزنید؛ انتخاب‌ها تا ۴ محصول در همین مرورگر می‌مانند.</p>
+        </div>
+        <button type="button" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="selectedProducts.length < 2" @click="beginComparison">
+          مقایسهٔ {{ selectedProducts.length }} محصول
+        </button>
+      </div>
+      <ul v-if="selectedProducts.length" class="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
+        <li v-for="product in selectedProducts" :key="product.sku" class="flex items-center justify-between gap-3 p-3">
+          <div class="min-w-0">
+            <NuxtLink :to="`/entity/${product.entity_slug}/`" class="truncate font-medium text-brand-700 hover:underline">{{ product.title }}</NuxtLink>
+            <p class="text-sm text-slate-500">{{ formatPrice(product.price, product.currency) }}</p>
+          </div>
+          <button type="button" class="shrink-0 text-xs text-rose-700 hover:underline" @click="removeFromComparison(product.sku)">حذف</button>
+        </li>
+      </ul>
+      <div v-else class="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center">
+        <p class="text-sm text-slate-500">هنوز محصولی انتخاب نکرده‌اید.</p>
+        <div class="mt-3 flex justify-center gap-3 text-sm">
+          <NuxtLink to="/catalog" class="text-brand-700 underline">رفتن به کاتالوگ</NuxtLink>
+          <NuxtLink to="/search" class="text-brand-700 underline">جست‌وجوی محصول</NuxtLink>
+        </div>
+      </div>
+      <p v-if="selectedProducts.length === 1" class="mt-3 text-xs text-amber-700">برای شروع مقایسه یک محصول دیگر هم اضافه کنید.</p>
+    </section>
 
     <p v-else-if="pending" class="py-8 text-center text-sm text-slate-500">در حال مقایسه…</p>
 
@@ -93,11 +134,14 @@ useSeoMeta({
     </div>
 
     <template v-else-if="data">
+      <div class="mb-4 flex justify-end">
+        <button type="button" class="text-sm text-brand-700 underline" @click="router.push('/compare')">ویرایش محصولات مقایسه</button>
+      </div>
       <div class="mb-6 grid gap-3 sm:grid-cols-2">
         <div
           v-for="product in data.products"
           :key="product.sku"
-          class="rounded-xl border border-slate-200 bg-white p-4"
+          class="rounded-xl border border-slate-200 bg-surface p-4"
         >
           <h2 class="mb-1 font-semibold leading-snug">{{ product.display_title }}</h2>
           <p v-if="product.brand" class="text-xs text-slate-500">{{ product.brand }}</p>
@@ -113,7 +157,7 @@ useSeoMeta({
 
       <section v-if="data.specs.length" class="mb-8">
         <h2 class="mb-3 text-lg font-semibold">مشخصات فنی</h2>
-        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface">
           <table class="w-full text-sm">
             <tbody>
               <tr
@@ -140,7 +184,7 @@ useSeoMeta({
 
       <section v-if="data.benchmarks.length">
         <h2 class="mb-3 text-lg font-semibold">فریم‌ریت اندازه‌گیری‌شده</h2>
-        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-surface">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 text-xs text-slate-500">
               <tr>

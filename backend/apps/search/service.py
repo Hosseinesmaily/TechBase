@@ -17,6 +17,7 @@ import time
 from typing import Any
 
 from . import postgres
+from .intent import SearchIntent, understand_search
 from .meili import (
     INDEX_ENTITIES,
     INDEX_PAGES,
@@ -86,7 +87,21 @@ def _meili_to_results(raw: dict[str, Any], kind: str) -> list[SearchResult]:
                 score=0.0,
                 price=hit.get("price"),
                 in_stock=hit.get("in_stock"),
-                extra={k: v for k, v in hit.items() if k in {"entity_type", "brand", "page_type"}},
+                extra={
+                    k: v
+                    for k, v in hit.items()
+                    if k
+                    in {
+                        "entity_type",
+                        "entity_slug",
+                        "sku",
+                        "currency",
+                        "stock",
+                        "updated_at",
+                        "brand",
+                        "page_type",
+                    }
+                },
             )
         )
     return results
@@ -108,19 +123,24 @@ def search(
     unchanged — the search still works, it is just less forgiving of typos.
     """
     started = time.perf_counter()
-    query = query.strip()
-    if not query:
+    original_query = query.strip()
+    if not original_query:
         return SearchResponse(query="", hits=[], total=0, backend="postgres")
+
+    intent = understand_search(original_query)
+    effective_type = entity_type or intent.entity_type or None
+    effective_query = intent.query or ("" if effective_type else normalize(original_query))
+    effective_kind = kind or ("product" if effective_type and not effective_query else None)
 
     # The PostgreSQL baseline is always computed: it is the fallback and it
     # also catches what the lexical index has not seen yet.
     pg_response = postgres.search(
-        query,
+        effective_query,
         limit=limit * 2,
-        entity_type=entity_type,
+        entity_type=effective_type,
         brand=brand,
         in_stock=in_stock,
-        kind=kind,
+        kind=effective_kind,
     )
 
     meili_rankings: list[list[SearchResult]] = []
@@ -129,15 +149,15 @@ def search(
     if use_meili:
         client: MeiliClient = get_client()
         if client.available():
-            filters = _build_filters(entity_type, brand, in_stock)
+            filters = _build_filters(effective_type, brand, in_stock)
             for index, kind_name in (
                 (INDEX_ENTITIES, "entity"),
                 (INDEX_PRODUCTS, "product"),
                 (INDEX_PAGES, "page"),
             ):
-                if kind is not None and kind != kind_name:
+                if effective_kind is not None and effective_kind != kind_name:
                     continue
-                raw = client.search(index, normalize(query), limit=limit, filters=filters)
+                raw = client.search(index, effective_query, limit=limit, filters=filters)
                 if raw is None:
                     continue
                 meili_rankings.append(_meili_to_results(raw, kind_name))
@@ -148,22 +168,76 @@ def search(
 
     if meili_rankings:
         fused = reciprocal_rank_fusion([*meili_rankings, pg_response.hits])
-        hits = fused[:limit]
+        hits = _rank_recommendations(fused, intent)
         backend = "hybrid"
     else:
-        hits = pg_response.hits[:limit]
+        hits = _rank_recommendations(pg_response.hits, intent)
         backend = "postgres"
+
+    total = max(pg_response.total, len(hits))
+    hits = hits[:limit]
 
     took_ms = int((time.perf_counter() - started) * 1000)
 
     return SearchResponse(
-        query=query,
+        query=original_query,
         hits=hits,
-        total=len(hits),
+        total=total,
         facets=facets,
         took_ms=took_ms,
         backend=backend,
+        intent={
+            "entity_type": effective_type or "",
+            "use_case": intent.use_case,
+            "resolution": intent.resolution,
+            "recommendations": "gaming" if intent.use_case == "gaming" else "",
+        },
     )
+
+
+def _rank_recommendations(hits: list[SearchResult], intent: SearchIntent) -> list[SearchResult]:
+    """Put in-stock gaming parts first and use measured FPS when available."""
+    if intent.use_case != "gaming" or intent.entity_type != "gpu":
+        return hits
+
+    products = [hit for hit in hits if hit.kind == "product"]
+    frame_rates: dict[str, float] = {}
+    if products and intent.resolution:
+        from apps.benchmarks.models import Benchmark
+
+        slugs = [str((hit.extra or {}).get("entity_slug", "")) for hit in products]
+        rows = Benchmark.objects.filter(
+            component__slug__in=[slug for slug in slugs if slug],
+            resolution=intent.resolution,
+        ).values_list("component__slug", "avg_fps")
+        totals: dict[str, list[float]] = {}
+        for slug, fps in rows:
+            totals.setdefault(slug, []).append(float(fps))
+        frame_rates = {slug: sum(values) / len(values) for slug, values in totals.items()}
+
+    def key(hit: SearchResult) -> tuple[int, float, float]:
+        extra = hit.extra or {}
+        slug = str(extra.get("entity_slug", ""))
+        price = float(hit.price or 0)
+        available_rank = 0 if hit.in_stock else 1
+        fps = frame_rates.get(slug)
+        if fps is not None:
+            extra["recommendation_reason"] = (
+                f"میانگین {fps:g} فریم‌برثانیه در {intent.resolution} بر اساس بنچمارک ثبت‌شده"
+            )
+            return (available_rank, -fps, price)
+        if intent.resolution:
+            extra["recommendation_reason"] = (
+                "بنچمارک این رزولوشن ثبت نشده؛ بر اساس موجودی و قیمت مرتب شده"
+            )
+        else:
+            extra["recommendation_reason"] = "بر اساس موجودی و قیمت مرتب شده"
+        return (available_rank, 0, price)
+
+    product_ids = {id(hit) for hit in products}
+    products.sort(key=key)
+    other_hits = [hit for hit in hits if id(hit) not in product_ids]
+    return products + other_hits
 
 
 def _build_filters(entity_type: str | None, brand: str | None, in_stock: bool | None) -> str | None:

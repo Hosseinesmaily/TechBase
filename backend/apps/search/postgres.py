@@ -67,7 +67,7 @@ def search(
     """Search the catalog with PostgreSQL."""
     started = time.perf_counter()
     normalized_query = normalize(query)
-    if not normalized_query:
+    if not normalized_query and not entity_type:
         # An empty query matches everything — that is a browse, not a search.
         return SearchResponse(
             query=query, hits=[], total=0, facets={}, took_ms=0, backend="postgres"
@@ -75,7 +75,7 @@ def search(
 
     hits: list[SearchResult] = []
 
-    if kind in (None, "entity", "product"):
+    if kind in (None, "entity"):
         entities = Entity.objects.filter(is_active=True).select_related("brand")
         if entity_type:
             entities = entities.filter(type=entity_type)
@@ -123,7 +123,14 @@ def search(
                     score=0.9,
                     price=str(product.price),
                     in_stock=product.in_stock,
-                    extra={"entity_slug": product.entity.slug, "entity_type": product.entity.type},
+                    extra={
+                        "entity_slug": product.entity.slug,
+                        "entity_type": product.entity.type,
+                        "sku": product.sku,
+                        "currency": product.currency,
+                        "stock": product.stock,
+                        "updated_at": product.updated_at.isoformat(),
+                    },
                 )
             )
 

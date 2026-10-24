@@ -13,6 +13,11 @@ export interface SearchHit {
   entity_slug?: string
   brand?: string
   page_type?: string
+  sku?: string
+  currency?: string
+  stock?: number
+  updated_at?: string
+  recommendation_reason?: string
 }
 
 export interface SearchResponse {
@@ -22,6 +27,7 @@ export interface SearchResponse {
   facets: Record<string, Record<string, number>>
   took_ms: number
   backend: "hybrid" | "meilisearch" | "postgres"
+  intent?: { entity_type?: string; use_case?: string; resolution?: string; recommendations?: string }
 }
 
 export interface Suggestion {

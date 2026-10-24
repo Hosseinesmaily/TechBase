@@ -2,17 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Persian-first design tokens (expanded in Phase 2). */
 :root {
-  --color-brand-50: #eef6ff;
-  --color-brand-500: #2563eb;
-  --color-brand-600: #1d4ed8;
+  color-scheme: dark;
+  --color-background: #080d1b;
+  --color-surface: #111a2d;
+  --color-surface-raised: #172238;
+  --color-foreground: #f1f5fb;
+  --color-muted: #a5b0c6;
+  --color-border: #29364f;
+  --color-accent: #3479ff;
+  --color-warm-glow: #8b4927;
+  --shadow-card: 0 18px 50px rgb(0 0 0 / 22%);
+  font-family: "IRANSharp", "IRAN Sharp", "Vazirmatn", Tahoma, Arial, sans-serif;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html {
-  @apply antialiased;
+  min-width: 320px;
+  scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 16px;
+  line-height: 1.7;
+  background-color: var(--color-background);
+  background-image:
+    radial-gradient(ellipse 54rem 44rem at 27% 25%, rgb(35 82 184 / 30%), transparent 70%),
+    radial-gradient(ellipse 46rem 38rem at 88% 42%, rgb(123 58 27 / 27%), transparent 72%),
+    linear-gradient(118deg, #080d1b 0%, #101a31 53%, #17131b 100%);
+  background-attachment: fixed;
+}
+
+::selection {
+  color: #fff;
+  background: #245fd0;
+}
+
+:focus-visible {
+  outline: 2px solid #74a1ff;
+  outline-offset: 3px;
+}
+
+/* A quick, quiet transition keeps route changes fluid without delaying input. */
+.route-enter-active,
+.route-leave-active {
+  transition: opacity 180ms ease, transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  will-change: opacity, transform;
+}
+
+.route-enter-from {
+  opacity: 0;
+  transform: translateY(9px);
+}
+
+.route-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+/* Make common controls feel responsive while keeping the motion subtle. */
+a,
+button,
+input,
+select,
+textarea {
+  transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+button,
+a[class*="rounded-xl"][class*="border"],
+a[class*="rounded-full"] {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 180ms;
+}
+
+button:active,
+a[class*="rounded-xl"][class*="border"]:active,
+a[class*="rounded-full"]:active {
+  transform: scale(0.985);
+}
+
+/* Dark glass surface used by cards and controls throughout the app. */
+.search-shell {
+  border: 1px solid rgb(129 144 171 / 24%);
+  border-radius: 1.25rem;
+  background: rgb(17 26 45 / 78%);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%), inset 0 1px rgb(255 255 255 / 3%);
+  backdrop-filter: blur(14px);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.search-shell:focus-within {
+  border-color: rgb(75 131 255 / 78%);
+  background: rgb(17 26 45 / 92%);
+  box-shadow: 0 0 0 3px rgb(52 121 255 / 16%), 0 14px 34px rgb(0 0 0 / 24%);
+}
+
+.search-field {
+  border: 1px solid transparent;
+  color: var(--color-foreground);
+  background: transparent;
+  outline: none;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.search-field::placeholder {
+  color: #8290aa;
+  opacity: 1;
+}
+
+.search-submit {
+  background: linear-gradient(135deg, #4384ff, #2868ee);
+  box-shadow: 0 5px 14px rgb(40 104 238 / 26%);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.search-submit:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 20px rgb(40 104 238 / 38%);
+  transform: translateY(-1px);
+}
+
+.search-submit:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.bg-surface {
+  background-color: rgb(20 29 49 / 88%);
+}
+
+.bg-surface\/85 {
+  background-color: rgb(20 29 49 / 85%);
+}
+
+.bg-surface\/65 {
+  background-color: rgb(20 29 49 / 65%);
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+input::placeholder {
+  color: #8290aa;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .route-enter-from,
+  .route-leave-to {
+    transform: none;
+  }
 }

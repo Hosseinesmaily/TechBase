@@ -86,7 +86,7 @@ const totalPages = computed(() => {
       قیمت و موجودی مستقیماً از انبار فروشگاه — هر کارت تاریخ به‌روزرسانی را نشان می‌دهد.
     </p>
 
-    <div class="mb-6 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-4">
+    <div class="mb-6 grid gap-3 rounded-xl border border-slate-200 bg-surface p-4 sm:grid-cols-4">
       <label class="block">
         <span class="mb-1 block text-xs font-medium text-slate-600">نوع</span>
         <select

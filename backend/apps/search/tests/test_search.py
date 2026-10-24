@@ -144,6 +144,11 @@ class TestPostgresSearch:
     def test_empty_query_gives_nothing(self, catalog):
         assert postgres.search("").total == 0
 
+    def test_empty_query_with_product_type_browses_that_category(self, catalog):
+        response = postgres.search("", entity_type="gpu", kind="product")
+        assert any((hit.extra or {}).get("sku") == "tb-gpu-4060" for hit in response.hits)
+        assert all(hit.kind == "product" for hit in response.hits)
+
     def test_facets_count_the_hits(self, catalog):
         response = postgres.search("a")
         assert response.facets is not None
@@ -202,6 +207,16 @@ class TestSearchApi:
     def test_autocomplete_needs_two_characters(self, api, catalog):
         response = api.get(reverse("search:autocomplete"), {"q": "R"})
         assert response.data["suggestions"] == []
+
+    def test_gaming_gpu_natural_query_returns_product_cards_data(self, api, catalog):
+        response = api.get(reverse("search:search"), {"q": "کارت گرافیک مخصوص گیم"})
+        assert response.status_code == 200
+        assert response.data["intent"]["entity_type"] == "gpu"
+        assert response.data["intent"]["use_case"] == "gaming"
+        product = next(hit for hit in response.data["hits"] if hit["kind"] == "product")
+        assert product["sku"] == "tb-gpu-4060"
+        assert product["price"]
+        assert product["recommendation_reason"]
 
 
 class TestIndexing:

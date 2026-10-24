@@ -40,6 +40,8 @@ class RateLimitResult:
 
 def _client():
     """The Redis client, or None when Redis is unreachable."""
+    if not settings.REDIS_URL:
+        return None
     try:
         import redis
 

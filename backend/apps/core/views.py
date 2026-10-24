@@ -31,13 +31,16 @@ def ready(_request) -> JsonResponse:
         logger.warning("readiness: database failed: %s", exc)
         checks["database"] = f"error: {exc.__class__.__name__}"
 
-    try:
-        client = redis_lib.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1)
-        client.ping()
-        checks["redis"] = "ok"
-    except Exception as exc:
-        logger.warning("readiness: redis failed: %s", exc)
-        checks["redis"] = f"error: {exc.__class__.__name__}"
+    if not settings.REDIS_URL:
+        checks["redis"] = "not configured"
+    else:
+        try:
+            client = redis_lib.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1)
+            client.ping()
+            checks["redis"] = "ok"
+        except Exception as exc:
+            logger.warning("readiness: redis failed: %s", exc)
+            checks["redis"] = f"error: {exc.__class__.__name__}"
 
     healthy = all(value == "ok" for value in checks.values())
     return JsonResponse(

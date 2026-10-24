@@ -54,6 +54,7 @@ class SearchResponse:
     facets: dict[str, dict[str, int]] | None = None
     took_ms: int = 0
     backend: str = "postgres"
+    intent: dict[str, str] | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -76,6 +77,7 @@ class SearchResponse:
             "facets": self.facets or {},
             "took_ms": self.took_ms,
             "backend": self.backend,
+            "intent": self.intent or {},
         }
 
 
@@ -112,6 +114,9 @@ class MeiliClient:
 
     def available(self) -> bool:
         """Whether Meilisearch answers right now."""
+        if not self.url:
+            self._unavailable = True
+            return False
         client = self.client
         if client is None:
             return False

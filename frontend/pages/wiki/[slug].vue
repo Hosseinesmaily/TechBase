@@ -173,7 +173,7 @@ function splitText(text: string): Segment[] {
 
     <dl
       v-if="page.use_case || page.resolution || page.budget_max"
-      class="mb-6 grid grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm"
+      class="mb-6 grid grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm"
     >
       <div v-if="page.use_case">
         <dt class="text-xs text-slate-500">کاربرد</dt>
@@ -198,7 +198,7 @@ function splitText(text: string): Segment[] {
         <li
           v-for="(product, index) in page.recommended_products"
           :key="product.sku"
-          class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+          class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-surface px-4 py-3"
         >
           <span class="flex items-center gap-3">
             <span

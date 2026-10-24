@@ -35,7 +35,7 @@ useSeoMeta({
         <button
           v-for="suggestion in suggestions"
           :key="suggestion"
-          class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-start text-sm hover:border-brand-300 hover:bg-brand-50"
+          class="rounded-lg border border-slate-200 bg-surface px-4 py-2.5 text-start text-sm hover:border-brand-300 hover:bg-brand-50"
           @click="ask(suggestion)"
         >
           {{ suggestion }}
@@ -51,7 +51,7 @@ useSeoMeta({
         :class="
           message.role === 'user'
             ? 'border-brand-200 bg-brand-50/60'
-            : 'border-slate-200 bg-white'
+            : 'border-slate-200 bg-surface'
         "
       >
         <p class="mb-1 text-xs font-semibold text-slate-400">
@@ -104,17 +104,17 @@ useSeoMeta({
       </button>
     </div>
 
-    <form class="mt-6 flex gap-2" @submit.prevent="ask(question)">
+    <form class="search-shell mt-6 flex items-center gap-2 p-2" @submit.prevent="ask(question)">
       <input
         v-model="question"
         type="text"
         placeholder="سؤال خود را بنویسید…"
-        class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        class="search-field min-w-0 flex-1 rounded-xl px-4 py-3 text-base"
         :disabled="streaming"
       />
       <button
         type="submit"
-        class="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+        class="search-submit shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="streaming || !question.trim()"
       >
         {{ streaming ? "در حال پاسخ…" : "بپرس" }}

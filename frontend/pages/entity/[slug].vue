@@ -69,7 +69,7 @@ const TYPE_LABELS: Record<string, string> = {
 
     <section
       v-if="entity.price_min"
-      class="rounded-xl border border-slate-200 bg-white p-4"
+      class="rounded-xl border border-slate-200 bg-surface p-4"
     >
       <p class="text-xs text-slate-500">شروع قیمت</p>
       <p class="mt-1 text-xl font-bold">{{ formatPrice(entity.price_min) }}</p>

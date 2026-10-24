@@ -10,6 +10,7 @@ export interface ProductCardData {
   entity_slug: string
   entity_type: string
   updated_at: string
+  recommendation_reason?: string
 }
 
 export interface Understanding {

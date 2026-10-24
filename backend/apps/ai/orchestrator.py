@@ -21,6 +21,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from apps.search.intent import understand_search
+
 from .cache import find_similar, store
 from .guardrails import enforce, sanitize_retrieved, wrap_untrusted
 from .llm import LLM, Message, get_llm
@@ -64,6 +66,7 @@ class ProductCard:
     entity_slug: str
     entity_type: str
     updated_at: str
+    recommendation_reason: str = ""
 
     def as_dict(self) -> dict:
         return {
@@ -76,6 +79,7 @@ class ProductCard:
             "entity_slug": self.entity_slug,
             "entity_type": self.entity_type,
             "updated_at": self.updated_at,
+            "recommendation_reason": self.recommendation_reason,
         }
 
 
@@ -120,19 +124,37 @@ def plan_tools(query: str, understanding: QueryUnderstanding) -> list[tuple[str,
     # The wiki is always searched: it produces the citations.
     plan.append(("search_wiki", {"query": query, "limit": 6}))
 
+    compatibility_requested = any(
+        cue in query.lower()
+        for cue in ("سازگار", "سازگاری", "با هم کار", "compatible", "compatibility")
+    )
+    if compatibility_requested:
+        from .tools import resolve_entity_slugs
+
+        parts = resolve_entity_slugs(query, limit=8)
+        if len(parts) >= 2:
+            plan.append(("check_compatibility", {"parts": parts}))
+
     # A product question (or a shopping intent) needs the catalog.
-    wants_products = understanding.use_case in {"gaming", "office", "content_creation"}
+    search_intent = understand_search(query)
+    wants_products = understanding.use_case in {"gaming", "office", "content_creation"} or bool(
+        search_intent.entity_type
+    )
     mentions_price = any(
         cue in query.lower() for cue in ("قیمت", "خرید", "بخر", "price", "cost", "موجود")
     )
-    if wants_products or mentions_price:
+    if (wants_products or mentions_price) and not (compatibility_requested and not mentions_price):
         filters: dict[str, Any] = {"limit": 8}
-        if understanding.use_case == "gaming":
+        if search_intent.entity_type:
+            filters["entity_type"] = search_intent.entity_type
+        elif understanding.use_case == "gaming":
             filters["entity_type"] = "prebuilt"
         if understanding.budget_max:
             filters["max_price"] = understanding.budget_max
-        if understanding.resolution in {"1080p", "1440p", "4k"}:
-            filters["entity_type"] = filters.get("entity_type", "gpu")
+        if search_intent.entity_type == "gpu" and understanding.use_case == "gaming":
+            filters["resolution"] = understanding.resolution
+        if wants_products and not mentions_price:
+            filters["in_stock"] = True
         plan.append(("search_products", filters))
 
     # Benchmarks, when a frame rate is at stake.
@@ -225,7 +247,8 @@ def cards_from(results: list[ToolResult]) -> list[ProductCard]:
                     stock=int(item.get("stock", 0) or 0),
                     entity_slug=str(item.get("entity_slug", "")),
                     entity_type=str(item.get("entity_type", "")),
-                    updated_at=str(item.get("updated_at", "")),
+                    updated_at=str(item.get("price_updated_at") or item.get("updated_at", "")),
+                    recommendation_reason=str(item.get("recommendation_reason", "")),
                 )
             )
     return cards
@@ -282,17 +305,33 @@ def run_agent(
     )
 
     # One clarifying question, then stop.
-    if ask_clarifying and understanding.needs_clarification:
-        result.clarifying_question = understanding.clarifying_question
-        result.latency_ms = int((time.perf_counter() - started) * 1000)
-        if log:
-            result.query_log_id = _log(
-                query,
-                result,
-                understanding=understanding,
-                latency_ms=result.latency_ms,
-            )
-        return result
+    has_specific_product = bool(understand_search(query).entity_type)
+    compatibility_requested = any(
+        cue in query.lower()
+        for cue in ("سازگار", "سازگاری", "با هم کار", "compatible", "compatibility")
+    )
+    if ask_clarifying and understanding.needs_clarification and not has_specific_product:
+        if compatibility_requested:
+            from .tools import resolve_entity_slugs
+
+            if len(resolve_entity_slugs(query, limit=8)) < 2:
+                result.clarifying_question = "برای بررسی قطعی سازگاری، نام دقیق دست‌کم دو قطعه را بنویسید؛ مثلاً پردازنده و مادربرد."
+            else:
+                result.clarifying_question = ""
+        else:
+            result.clarifying_question = understanding.clarifying_question
+        if not result.clarifying_question:
+            pass
+        else:
+            result.latency_ms = int((time.perf_counter() - started) * 1000)
+            if log:
+                result.query_log_id = _log(
+                    query,
+                    result,
+                    understanding=understanding,
+                    latency_ms=result.latency_ms,
+                )
+            return result
 
     # The semantic cache: a repeated question must not cost a second call.
     if use_cache:
@@ -347,8 +386,11 @@ def run_agent(
     ]
 
     try:
-        response = model.complete(messages)
-        draft = response.text
+        if getattr(model, "name", "") == "fake":
+            draft = _local_tool_answer(query, understanding, tool_results, result.citations)
+        else:
+            response = model.complete(messages)
+            draft = response.text
     except Exception as exc:
         logger.exception("the model failed")
         result.answer = f"پاسخ‌گویی ناموفق بود: {exc}"
@@ -382,6 +424,102 @@ def run_agent(
     return result
 
 
+def _local_tool_answer(
+    query: str,
+    understanding: QueryUnderstanding,
+    results: list[ToolResult],
+    citations: list[dict],
+) -> str:
+    """Produce a useful grounded response when no external LLM is configured."""
+    compatibility = next(
+        (tool.data for tool in results if tool.tool == "check_compatibility" and tool.ok),
+        None,
+    )
+    if compatibility is not None:
+        verdict = compatibility.get("verdict", "unknown")
+        label = {"ok": "سازگار", "warn": "سازگار با نکتهٔ قابل توجه", "block": "ناسازگار"}.get(
+            verdict, "نتیجه نامشخص"
+        )
+        findings = [
+            item.get("message_fa") or item.get("message", "")
+            for item in compatibility.get("findings", [])
+        ]
+        detail = "؛ ".join(text for text in findings if text)
+        answer = f"بررسی قطعی قانون‌محور قطعات: {label}."
+        if detail:
+            answer += f" {detail}"
+        if citations:
+            answer += " برای جزئیات بیشتر، راهنمای مرتبط [1] را ببین."
+        return answer
+
+    products: list[dict[str, Any]] = next(
+        (
+            tool.data.get("items", [])
+            for tool in results
+            if tool.tool == "search_products" and tool.ok
+        ),
+        [],
+    )
+    if products:
+        intent = understand_search(query)
+        product_label = {
+            "gpu": "کارت گرافیک",
+            "cpu": "پردازنده",
+            "ram": "حافظهٔ رم",
+            "motherboard": "مادربرد",
+            "psu": "منبع تغذیه",
+            "prebuilt": "سیستم آماده",
+        }.get(
+            intent.entity_type,
+            "سیستم آماده" if understanding.use_case == "gaming" else "محصول",
+        )
+        use_case = {
+            "gaming": "برای بازی",
+            "office": "برای کار اداری",
+            "content_creation": "برای تولید محتوا",
+        }.get(understanding.use_case, "")
+        if intent.resolution and intent.entity_type == "gpu":
+            order = f"گزینه‌ها را بر اساس میانگین FPS ثبت‌شده در {intent.resolution} مرتب کردم؛ دلیل رتبهٔ هر کارت کنار آن آمده است."
+        elif understanding.budget_max:
+            order = "گزینه‌های موجود در بودجه‌ات را از قیمت کمتر به بیشتر آوردم."
+        else:
+            order = "چون بودجه مشخص نشده، گزینه‌های موجود را از قیمت کمتر به بیشتر مرتب کردم تا بتوانی مقایسه‌شان کنی."
+        answer = f"برای «{product_label} {use_case}»، {len(products)} گزینه از کاتالوگ پیدا کردم. {order} قیمت و موجودی دقیق هر مورد و زمان به‌روزرسانی در کارت‌ها آمده است."
+        unique_citations: list[dict] = []
+        seen_titles: set[str] = set()
+        for citation in citations:
+            title = str(citation.get("page_title", ""))
+            if title and title not in seen_titles:
+                unique_citations.append(citation)
+                seen_titles.add(title)
+            if len(unique_citations) == 2:
+                break
+        if unique_citations:
+            answer += (
+                "\n\nبرای نکات انتخاب و توضیح فنی، راهنمای "
+                + "، ".join(
+                    f"[{citation['index']}] {citation['page_title']}"
+                    for citation in unique_citations
+                )
+                + " را هم ببین."
+            )
+        return answer
+
+    wiki_items: list[dict[str, Any]] = next(
+        (tool.data.get("items", []) for tool in results if tool.tool == "search_wiki" and tool.ok),
+        [],
+    )
+    if wiki_items and citations:
+        first = wiki_items[0]
+        excerpt = sanitize_retrieved(str(first.get("text", ""))).text.strip()
+        excerpt = " ".join(excerpt.split())
+        if len(excerpt) > 420:
+            excerpt = excerpt[:417].rsplit(" ", 1)[0] + "…"
+        return f"در راهنمای «{citations[0]['page_title']}» این بخش را پیدا کردم: {excerpt} [1]"
+
+    return "برای این پرسش هنوز محصول یا مقالهٔ مرتبطی در داده‌های فروشگاه پیدا نکردم. نام قطعه یا کاربردش را دقیق‌تر بنویس تا دوباره جست‌وجو کنم."
+
+
 def _card_from_dict(data: dict) -> ProductCard:
     """A product card from its stored form."""
     return ProductCard(
@@ -394,6 +532,7 @@ def _card_from_dict(data: dict) -> ProductCard:
         entity_slug=str(data.get("entity_slug", "")),
         entity_type=str(data.get("entity_type", "")),
         updated_at=str(data.get("updated_at", "")),
+        recommendation_reason=str(data.get("recommendation_reason", "")),
     )
 
 

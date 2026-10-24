@@ -6,7 +6,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.ai.llm import LLMResponse, Message
+from apps.ai.llm import FakeLLM, LLMResponse, Message
 from apps.ai.orchestrator import (
     build_context,
     cards_from,
@@ -129,6 +129,17 @@ class TestSearchProducts:
         result = search_products(in_stock=True, limit=20)
         assert all(item["in_stock"] for item in result.data["items"])
 
+    def test_gaming_gpu_results_are_ranked_by_measured_fps(self, indexed):
+        result = search_products(entity_type="gpu", in_stock=True, resolution="1080p")
+        assert result.ok and result.data["items"]
+        scores = [
+            item["recommendation_fps"]
+            for item in result.data["items"]
+            if item["recommendation_fps"] is not None
+        ]
+        assert scores == sorted(scores, reverse=True)
+        assert all(item["recommendation_reason"] for item in result.data["items"])
+
     def test_the_facts_include_the_price(self, indexed):
         result = search_products(entity_type="prebuilt", limit=3)
         assert any("IRT" in fact for fact in result.facts())
@@ -192,6 +203,33 @@ class TestPlanTools:
         plan = plan_tools("سیستم گیمینگ", understanding)
         products = [args for name, args in plan if name == "search_products"]
         assert products and products[0].get("entity_type") == "prebuilt"
+
+    def test_a_gaming_gpu_query_searches_gpu_products_directly(self):
+        understanding = understand_with_heuristics("کارت گرافیک مخصوص گیم")
+        plan = plan_tools("کارت گرافیک مخصوص گیم", understanding)
+        product_calls = [args for name, args in plan if name == "search_products"]
+        assert product_calls and product_calls[0]["entity_type"] == "gpu"
+
+    def test_compatibility_query_routes_two_named_parts_to_the_rule_engine(self, indexed):
+        query = "Is Ryzen 7 7800X3D compatible with Gigabyte B760M DS3H?"
+        understanding = understand_with_heuristics(query)
+        plan = plan_tools(query, understanding)
+        checks = [args for name, args in plan if name == "check_compatibility"]
+        assert checks and len(checks[0]["parts"]) >= 2
+
+    def test_a_specific_part_query_does_not_block_on_missing_budget(self, indexed):
+        result = run_agent("کارت گرافیک مخصوص گیم", llm=FakeLLM(), use_cache=False)
+        assert not result.clarifying_question
+        assert result.cards
+        assert "گزینه" in result.answer
+
+    def test_compatibility_answer_uses_the_rule_engine(self, indexed):
+        query = "Is Ryzen 7 7800X3D compatible with Gigabyte B760M DS3H?"
+        result = run_agent(query, llm=FakeLLM(), use_cache=False)
+        assert not result.clarifying_question
+        assert any(call["tool"] == "check_compatibility" for call in result.tool_calls)
+        assert result.cards == []
+        assert "ناسازگار" in result.answer
 
     def test_the_budget_becomes_a_filter(self):
         understanding = understand_with_heuristics("سیستم گیمینگ با بودجه ۵۰ میلیون")

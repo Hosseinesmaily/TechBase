@@ -5,11 +5,12 @@ export default defineNuxtConfig({
 
   modules: ["@nuxtjs/tailwindcss"],
 
-  css: ["~/assets/css/main.css"],
+  css: ["@fontsource-variable/vazirmatn/wght.css", "~/assets/css/main.css"],
 
   typescript: { strict: true },
 
   app: {
+    pageTransition: { name: "route", mode: "out-in" },
     head: {
       htmlAttrs: { lang: "fa", dir: "rtl" },
       title: "تک‌بیس | پایگاه دانش سخت‌افزار",
@@ -28,7 +29,9 @@ export default defineNuxtConfig({
     // Server-side base for direct SSR calls; browser always uses the /api proxy.
     // Read at runtime (not baked at build time) so one build can be pointed at a
     // different API host by setting the env var.
-    apiInternalBase: process.env.API_INTERNAL_BASE || "http://backend:8000",
+    // Docker Compose overrides this with its service DNS name. The local
+    // Windows workflow talks to Django through the published host port.
+    apiInternalBase: process.env.API_INTERNAL_BASE || "http://127.0.0.1:8000",
     public: {
       siteName: "تک‌بیس",
       // Used for canonical URLs, the sitemap and robots.txt.

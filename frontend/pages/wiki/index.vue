@@ -47,7 +47,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil((pages.value?.count ?? 0
     <div class="mb-6 flex flex-wrap gap-2">
       <button
         class="rounded-full px-3 py-1.5 text-sm transition"
-        :class="type === '' ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 border border-slate-200'"
+        :class="type === '' ? 'bg-brand-600 text-white' : 'bg-surface text-slate-600 border border-slate-200'"
         @click="type = ''"
       >
         همه
@@ -56,7 +56,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil((pages.value?.count ?? 0
         v-for="(label, key) in TYPE_LABELS"
         :key="key"
         class="rounded-full px-3 py-1.5 text-sm transition"
-        :class="type === key ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 border border-slate-200'"
+        :class="type === key ? 'bg-brand-600 text-white' : 'bg-surface text-slate-600 border border-slate-200'"
         @click="type = key"
       >
         {{ label }}
@@ -68,7 +68,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil((pages.value?.count ?? 0
     <template v-else>
       <p class="mb-3 text-sm text-slate-500">{{ pages?.count ?? 0 }} صفحه</p>
 
-      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-surface">
         <li v-for="item in pages?.results ?? []" :key="item.id">
           <NuxtLink
             :to="`/wiki/${item.slug}/`"

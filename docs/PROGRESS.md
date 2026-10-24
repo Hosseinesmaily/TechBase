@@ -404,6 +404,32 @@ clarifying questions, product cards in the chat, comparison view).
 **Next**: Phase 6 (hardening: semantic cache, rate limiting, observability,
 security review, load test, production compose and deploy docs).
 
+## Customer/admin workflows and intent search (2026-10-24)
+
+- Added guest customer panel for favorites, comparison queue, saved compatible
+  builds and recent searches; local snapshots are labeled as browser-local and
+  historical for price/stock.
+- Added admin landing page linked to the real Django admin, Wagtail CMS and API
+  docs, with live API/readiness checks.
+- Category/use-case search now extracts GPU/gaming/resolution intent, browses a
+  category when no model name is specified, and ranks gaming GPUs using current
+  availability and measured FPS where a benchmark exists.
+- Product search results and assistant cards can save favorites and enqueue
+  comparisons; the comparison page guides selection from catalog/search instead
+  of asking users to edit a SKU URL.
+- Assistant with no external LLM key now answers from the deterministic tool
+  results; part-specific queries do not stall to ask for budget first.
+- Verification: full backend suite passed; search + agentic suite passed again
+  after the final edits; Ruff check/format, Nuxt typecheck, and production build
+  passed. Local SSR smoke checks returned 200 for `/account`, `/admin-panel`,
+  `/compare`, and intent search. Live API smoke checks returned GPU products,
+  grounded assistant citations/cards, measured-FPS ranking for 1080p, and a
+  multi-turn clarification follow-up that proceeds to product tools, and a
+  named-parts compatibility question routed to the deterministic rule engine.
+- Known host-only caveat: the pre-existing mypy command currently reports
+  Wagtail generated related-manager typing errors in `apps/content/models.py`;
+  feature tests, lint and frontend checks are clean.
+
 
 
 

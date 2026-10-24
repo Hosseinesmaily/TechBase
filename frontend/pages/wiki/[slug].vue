@@ -28,6 +28,18 @@ useSeoMeta({
 
 /** schema.org structured data, so search engines can render the page richly. */
 const siteUrl = useRequestURL().origin
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  cpu: "پردازنده",
+  gpu: "کارت گرافیک",
+  motherboard: "مادربرد",
+  ram: "حافظهٔ رم",
+  psu: "پاور",
+  case: "کیس",
+  cooler: "خنک‌کننده",
+  ssd: "حافظهٔ SSD",
+  prebuilt: "سیستم آماده",
+  concept: "مفهوم سخت‌افزاری",
+}
 
 useHead(() => ({
   script: page.value
@@ -153,16 +165,16 @@ function splitText(text: string): Segment[] {
       <span class="mx-1">/</span>
       <NuxtLink to="/wiki" class="hover:text-slate-900">ویکی</NuxtLink>
       <span class="mx-1">/</span>
-      <span class="text-slate-700">{{ page.title }}</span>
+      <span class="text-slate-700"><BidiText :text="page.title" /></span>
     </nav>
 
     <header class="mb-6">
-      <h1 class="text-3xl font-bold leading-snug">{{ page.title }}</h1>
-      <p v-if="page.summary" class="mt-2 text-slate-600">{{ page.summary }}</p>
+      <h1 class="text-3xl font-bold leading-snug"><BidiText :text="page.title" /></h1>
+      <p v-if="page.summary" class="mt-2 text-slate-600"><BidiText :text="page.summary" /></p>
 
       <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
         <span v-if="page.entity" class="rounded-full bg-brand-50 px-2.5 py-1 text-brand-700">
-          {{ page.entity.title }}
+          {{ ENTITY_TYPE_LABELS[page.entity.type] ?? "قطعه" }}
         </span>
         <span v-if="page.review_by">بازبینی: {{ formatDate(page.review_by) }}</span>
         <span v-if="page.is_stale" class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
@@ -206,7 +218,7 @@ function splitText(text: string): Segment[] {
             >
               {{ index + 1 }}
             </span>
-            <span class="font-medium">{{ product.title }}</span>
+            <span class="font-medium"><BidiText :text="product.title" /></span>
             <span
               v-if="!product.in_stock"
               class="rounded-full bg-rose-50 px-2 py-0.5 text-xs text-rose-600"
@@ -226,7 +238,7 @@ function splitText(text: string): Segment[] {
           :id="block.id"
           class="mt-8 text-xl font-semibold scroll-mt-20"
         >
-          {{ block.text }}
+          <BidiText :text="block.text ?? ''" />
         </h2>
 
         <h3
@@ -234,7 +246,7 @@ function splitText(text: string): Segment[] {
           :id="block.id"
           class="mt-6 text-lg font-semibold scroll-mt-20"
         >
-          {{ block.text }}
+          <BidiText :text="block.text ?? ''" />
         </h3>
 
         <h4
@@ -242,7 +254,7 @@ function splitText(text: string): Segment[] {
           :id="block.id"
           class="mt-5 font-semibold scroll-mt-20"
         >
-          {{ block.text }}
+          <BidiText :text="block.text ?? ''" />
         </h4>
 
         <p v-else-if="block.type === 'paragraph'" class="leading-8 text-slate-700">
@@ -253,7 +265,7 @@ function splitText(text: string): Segment[] {
               :text="segment.text"
               :red="segment.red"
             />
-            <span v-else>{{ segment.text }}</span>
+            <BidiText v-else :text="segment.text" />
           </template>
         </p>
 
@@ -262,7 +274,7 @@ function splitText(text: string): Segment[] {
           class="list-disc space-y-1 ps-6 text-slate-700"
         >
           <li v-for="(item, i) in block.items ?? []" :key="i" class="leading-8">
-            {{ item }}
+            <BidiText :text="item" />
           </li>
         </ul>
 
@@ -271,7 +283,7 @@ function splitText(text: string): Segment[] {
           class="list-decimal space-y-1 ps-6 text-slate-700"
         >
           <li v-for="(item, i) in block.items ?? []" :key="i" class="leading-8">
-            {{ item }}
+            <BidiText :text="item" />
           </li>
         </ol>
 
@@ -279,9 +291,9 @@ function splitText(text: string): Segment[] {
           v-else-if="block.type === 'quote'"
           class="border-s-4 border-brand-300 bg-brand-50/50 px-4 py-3 text-slate-700"
         >
-          <p class="leading-8">{{ block.text }}</p>
+          <p class="leading-8"><BidiText :text="block.text ?? ''" /></p>
           <cite v-if="block.source" class="mt-1 block text-xs text-slate-500">
-            {{ block.source }}
+            <BidiText :text="block.source" />
           </cite>
         </blockquote>
 
@@ -294,8 +306,8 @@ function splitText(text: string): Segment[] {
             'border-rose-200 bg-rose-50': block.kind === 'danger',
           }"
         >
-          <p v-if="block.title" class="mb-1 font-semibold">{{ block.title }}</p>
-          <p class="text-sm leading-7 text-slate-700">{{ block.text }}</p>
+          <p v-if="block.title" class="mb-1 font-semibold"><BidiText :text="block.title" /></p>
+          <p class="text-sm leading-7 text-slate-700"><BidiText :text="block.text ?? ''" /></p>
         </aside>
 
         <table
@@ -309,9 +321,9 @@ function splitText(text: string): Segment[] {
               class="border-b border-slate-100 last:border-0 even:bg-slate-50/60"
             >
               <th scope="row" class="w-1/2 px-4 py-2.5 text-start font-medium text-slate-600">
-                {{ row.label }}
+                <BidiText :text="row.label" />
               </th>
-              <td class="px-4 py-2.5 text-slate-900" dir="ltr">{{ row.value }}</td>
+              <td class="px-4 py-2.5 text-slate-900"><BidiText :text="row.value" /></td>
             </tr>
           </tbody>
         </table>
@@ -319,7 +331,7 @@ function splitText(text: string): Segment[] {
         <figure v-else-if="block.type === 'image' && block.url">
           <img :src="block.url" :alt="block.caption" class="rounded-lg" loading="lazy" />
           <figcaption v-if="block.caption" class="mt-1 text-center text-xs text-slate-500">
-            {{ block.caption }}
+            <BidiText :text="block.caption" />
           </figcaption>
         </figure>
 
@@ -328,7 +340,7 @@ function splitText(text: string): Segment[] {
             :slug="block.entity_slug ?? ''"
             :text="block.entity_slug ?? ''"
           />
-          <span v-if="block.note" class="ms-2 text-slate-500">{{ block.note }}</span>
+          <span v-if="block.note" class="ms-2 text-slate-500"><BidiText :text="block.note" /></span>
         </p>
       </template>
     </div>

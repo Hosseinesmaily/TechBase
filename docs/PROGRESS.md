@@ -463,6 +463,38 @@ security review, load test, production compose and deploy docs).
   typecheck clean. Local search returns the standardized GPU and prebuilt titles
   through PostgreSQL, with no repeated entity subtitle on product hits.
 
+## Wiki naming, RTL rendering, and link audit (2026-10-24)
+
+- Aligned seeded component entity names, product names, and component wiki page
+  titles to one category/manufacturer/model pattern. Confirmed model and spec
+  fragments remain Latin; preserved the requested `Tray` package suffix for
+  the Ryzen 7 7800X3D.
+- Added script-aware base direction (Persian RTL, Latin-only LTR) and LTR
+  isolation for model/spec fragments across wiki titles, prose, tables, lists,
+  recommendations, and link labels. Removed the
+  duplicate entity-name pill on article pages and duplicate entity chips from
+  the wiki index.
+- Enabled auto-linking on entity-less guide/concept pages by recording their
+  origin page with a nullable source entity. The guide detail API now returns
+  those links, and backlink serialization handles page-originated links.
+- Updated the prebuilt-purchase guide to mention the complete B760M board name
+  and the RM650x PSU, so those references resolve to their actual wiki pages.
+- Added nullable-source migration `linking.0002_alter_entitylink_source`.
+- Verification: full backend suite passed (413 tests); Ruff check/format,
+  Django migration check, Nuxt typecheck and production build passed. Applied the
+  migration, reseeded the local SQLite database, rebuilt 62 RAG chunks, and
+  checked live API/SSR responses (Ryzen title, 5 guide links, HTTP 200, and
+  rendered `<bdi>` fragments).
+- Final link-integrity check: 80 links, 0 broken links, 0 orphan wiki pages.
+  Ten red links are intentional references to catalog entities without their
+  own article; the frontend routes those to the entity detail fallback.
+- UI screenshot capture was attempted twice but the Windows browser frame
+  capture timed out; SSR HTML and API data were verified directly instead.
+- After the follow-up RTL report, changed mixed-script blocks from automatic
+  paragraph direction to an explicit script-aware base direction. Re-ran
+  Nuxt typecheck/build and catalog/wiki tests; the rendered product heading now
+  has an RTL Persian wrapper and an isolated LTR model fragment.
+
 
 
 

@@ -239,8 +239,6 @@ class WikiPageDetailView(APIView):
                 "target_exists": link.target_exists,
                 "section_path": link.section_path,
             }
-            for link in EntityLink.objects.filter(page=page, source=page.entity).select_related(
-                "target"
-            )
+            for link in EntityLink.objects.filter(page=page).select_related("target")
         ]
         return Response(data)

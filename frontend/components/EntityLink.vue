@@ -15,7 +15,7 @@ const props = defineProps<{
     class="entity-link"
     :data-entity="props.slug"
   >
-    <slot>{{ props.text }}</slot>
+    <BidiText :text="props.text" />
   </NuxtLink>
 </template>
 

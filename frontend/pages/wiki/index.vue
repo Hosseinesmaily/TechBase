@@ -74,16 +74,13 @@ const totalPages = computed(() => Math.max(1, Math.ceil((pages.value?.count ?? 0
             :to="`/wiki/${item.slug}/`"
             class="block px-4 py-3 transition hover:bg-slate-50"
           >
-            <p class="font-medium">{{ item.title }}</p>
+            <p class="font-medium"><BidiText :text="item.title" /></p>
             <p v-if="item.summary" class="mt-0.5 text-sm text-slate-500">
-              {{ item.summary }}
+              <BidiText :text="item.summary" />
             </p>
             <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
               <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
                 {{ TYPE_LABELS[item.page_type === "BuyerGuidePage" ? "guide" : item.page_type === "ConceptPage" ? "concept" : "component"] }}
-              </span>
-              <span v-if="item.entity" class="rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">
-                {{ item.entity.title }}
               </span>
               <span v-if="item.is_stale" class="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
                 نیازمند بازبینی

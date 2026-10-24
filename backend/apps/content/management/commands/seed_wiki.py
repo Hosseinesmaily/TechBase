@@ -544,7 +544,7 @@ PAGES: list[dict] = [
             ("heading", "h2", "ای‌ام‌دی یا اینتل؟"),
             (
                 "paragraph",
-                "گزینهٔ TechBase Legend 1440 با Radeon RX 7800 XT ارزش خرید بهتری دارد و در بازی‌های 1440p به RTX 4070 SUPER نزدیک می‌شود. اگر بازی‌های استراتژیک و کارهای رندر هم دارید، Ryzen 9 7950X در TechBase Apex 4K انتخاب بهتری است.",
+                "گزینهٔ TechBase Legend 1440 با Radeon RX 7800 XT ارزش خرید بهتری دارد و در بازی‌های 1440p به RTX 4070 SUPER نزدیک می‌شود. سیستم آمادهٔ TechBase Phantom 1440 با همین وضوح و کارت RTX 4070 SUPER گزینهٔ دیگری برای بررسی است. اگر بازی‌های استراتژیک و کارهای رندر هم دارید، Ryzen 9 7950X در TechBase Apex 4K انتخاب بهتری است.",
             ),
             ("heading", "h2", "مقایسهٔ کارت‌ها"),
             (
@@ -572,12 +572,12 @@ PAGES: list[dict] = [
             ("heading", "h2", "۱. سازگاری قطعات را بررسی کنید"),
             (
                 "paragraph",
-                "مهم‌ترین نکته: پردازنده و مادربرد باید سوکت یکسان داشته باشند. یک سیستم با Ryzen 5 7600 (سوکت AM5) و مادربرد B760M (سوکت LGA1700) اصلاً روشن نمی‌شود. همین بررسی در موتور سازگاری تک‌بیس به‌صورت خودکار انجام می‌شود.",
+                "مهم‌ترین نکته: پردازنده و مادربرد باید سوکت یکسان داشته باشند. یک سیستم با Ryzen 5 7600 (سوکت AM5) و مادربرد GIGABYTE B760M DS3H (سوکت LGA1700) اصلاً روشن نمی‌شود. همین بررسی در موتور سازگاری تک‌بیس به‌صورت خودکار انجام می‌شود.",
             ),
             ("heading", "h2", "۲. منبع تغذیه"),
             (
                 "paragraph",
-                "منبع تغذیه را بر اساس مجموع توان قطعات انتخاب کنید. برای RTX 4070 SUPER حداقل ۶۵۰ وات توصیه می‌شود.",
+                "منبع تغذیه را بر اساس مجموع توان قطعات انتخاب کنید. برای RTX 4070 SUPER حداقل ۶۵۰ وات توصیه می‌شود؛ پاور ۶۵۰ وات Corsair مدل RM650x 80Plus Gold نمونه‌ای از گزینه‌های این رده است.",
             ),
             ("heading", "h2", "۳. تاریخ به‌روزرسانی قیمت"),
             (
@@ -759,7 +759,11 @@ class Command(BaseCommand):
             # The page may have been created as another type; rebuild it.
             page = cast("WikiPage", existing.specific)
 
-        page.title = spec["title"]
+        # Product-bound wiki articles use the same complete display name as
+        # the catalog, so the title, card and entity badge cannot disagree.
+        page.title = (
+            entity.display_title if spec["type"] == "component" and entity else spec["title"]
+        )
         page.summary = spec["summary"]
         page.entity = entity
         page.review_by = date.today() + timedelta(days=spec.get("review_days", 90))

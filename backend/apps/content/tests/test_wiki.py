@@ -104,6 +104,7 @@ class TestAutoLinkedWiki:
         result = check_integrity()
         assert result.broken_links == 0
         assert result.total_links > 0
+        assert result.orphan_pages == 0
 
 
 class TestWikiApiAfterSeed:
@@ -133,6 +134,31 @@ class TestWikiApiAfterSeed:
             link = links[(surface, slug)]
             assert link.target_exists is True
             assert link.target.wiki_pages.live().exists()
+
+    def test_seeded_product_titles_follow_category_brand_model_format(self, seeded_wiki):
+        cpu = Entity.objects.get(slug="ryzen-7-7800x3d")
+        psu = Entity.objects.get(slug="corsair-rm650x")
+        assert cpu.display_title == "پردازندهٔ کامپیوتر ای‌ام‌دی مدل Ryzen 7 7800X3D Tray"
+        assert "پردازندهٔ کامپیوتر ای‌ام‌دی مدل Ryzen 7 7800X3D Tray" in cpu.aliases
+        assert psu.display_title == "پاور ۶۵۰ وات Corsair مدل RM650x 80Plus Gold"
+        assert "پاور ۶۵۰ وات Corsair مدل RM650x 80Plus Gold" in psu.aliases
+
+    def test_entityless_guide_gets_internal_links(self, seeded_wiki):
+        guide = WikiPage.objects.get(slug="how-to-choose-a-prebuilt-pc")
+        links = EntityLink.objects.filter(page=guide, auto_created=True)
+        assert links.filter(target__slug="ryzen-5-7600").exists()
+        assert links.filter(target__slug="gigabyte-b760m-ds3h").exists()
+        assert links.filter(target__slug="rtx-4070-super").exists()
+        assert links.filter(target__slug="corsair-rm650x").exists()
+        assert links.filter(target__slug="samsung-990-pro-2tb").exists()
+        assert links.filter(source__isnull=True).count() == links.count()
+
+    def test_guide_api_includes_its_auto_links(self, api, seeded_wiki):
+        response = api.get(
+            reverse("content:page-detail", kwargs={"slug": "how-to-choose-a-prebuilt-pc"})
+        )
+        assert response.status_code == 200
+        assert any(link["target_slug"] == "rtx-4070-super" for link in response.data["links"])
 
     def test_ryzen_5_7600_has_a_published_article(self, api, seeded_wiki):
         response = api.get(reverse("content:page-detail", kwargs={"slug": "ryzen-5-7600"}))

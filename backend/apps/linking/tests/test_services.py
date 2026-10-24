@@ -96,6 +96,23 @@ class TestLinkPage:
         assert result.created == []
         assert EntityLink.objects.filter(page=page).count() == 0
 
+    def test_entityless_editorial_page_links_named_entities(self, wiki_root, catalog):
+        page = make_page(
+            wiki_root,
+            catalog,
+            slug="buyer-guide",
+            entity=None,
+            body_blocks=paragraph(
+                "برای این سیستم، مادربرد ASUS TUF Gaming B650-PLUS را بررسی کنید."
+            ),
+        )
+
+        result = link_page(page)
+
+        link = EntityLink.objects.get(page=page, target=catalog["board"])
+        assert result.created == ["asus-b650"]
+        assert link.source is None
+
     def test_brand_names_are_not_linked(self, wiki_root, catalog):
         """Linking every "ای‌ام‌دی" would be noise, not information."""
         page = make_page(

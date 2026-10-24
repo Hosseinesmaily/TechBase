@@ -34,7 +34,9 @@ class EntityLink(UUIDModel, TimeStampedModel):
     mention per section and lets citations point at a specific heading.
     """
 
-    source = models.ForeignKey(Entity, on_delete=models.CASCADE, related_name="outgoing_links")
+    source = models.ForeignKey(
+        Entity, on_delete=models.CASCADE, null=True, blank=True, related_name="outgoing_links"
+    )
     target = models.ForeignKey(Entity, on_delete=models.CASCADE, related_name="incoming_links")
     link_type = models.CharField(
         max_length=32, choices=LinkType.choices, default=LinkType.MENTIONS, db_index=True
@@ -73,7 +75,8 @@ class EntityLink(UUIDModel, TimeStampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"{self.source_id} → {self.target_id} ({self.link_type})"
+        source = self.source_id or (self.page.slug if self.page_id else "wiki")
+        return f"{source} → {self.target_id} ({self.link_type})"
 
     @property
     def is_red_link(self) -> bool:

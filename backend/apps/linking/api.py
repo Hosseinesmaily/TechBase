@@ -132,8 +132,8 @@ class BacklinkListView(APIView):
                 "count": links.count(),
                 "backlinks": [
                     {
-                        "source_slug": link.source.slug,
-                        "source_title": link.source.display_title,
+                        "source_slug": link.source.slug if link.source_id else None,
+                        "source_title": link.source.display_title if link.source_id else None,
                         "link_type": link.link_type,
                         "text": link.text,
                         "section_path": link.section_path,

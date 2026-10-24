@@ -133,10 +133,6 @@ def link_page(page) -> LinkPageResult:
     """
     result = LinkPageResult(page_slug=page.slug)
     source = page.entity
-    if source is None:
-        # A page with no entity has no source edge; nothing to link.
-        return result
-
     text, section_of = page_sections(page)
     matcher, meta = entity_matcher()
     plan = plan_links(text, matcher, meta, section_of)

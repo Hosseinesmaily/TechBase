@@ -118,6 +118,28 @@ class TestWikiApiAfterSeed:
         assert response.data["body"]
         assert response.data["entity"]["slug"] == "ryzen-7-7800x3d"
 
+    def test_ryzen_article_links_full_names_to_published_wiki_pages(self, seeded_wiki):
+        page = WikiPage.objects.get(slug="ryzen-7-7800x3d")
+        links = {
+            (link.text, link.target.slug): link
+            for link in EntityLink.objects.filter(page=page, auto_created=True)
+        }
+
+        for surface, slug in (
+            ("ASUS TUF Gaming B650-PLUS", "asus-tuf-gaming-b650-plus"),
+            ("Ryzen 5 7600", "ryzen-5-7600"),
+            ("حافظهٔ DDR5", "ddr5"),
+        ):
+            link = links[(surface, slug)]
+            assert link.target_exists is True
+            assert link.target.wiki_pages.live().exists()
+
+    def test_ryzen_5_7600_has_a_published_article(self, api, seeded_wiki):
+        response = api.get(reverse("content:page-detail", kwargs={"slug": "ryzen-5-7600"}))
+        assert response.status_code == 200
+        assert response.data["entity"]["slug"] == "ryzen-5-7600"
+        assert len(response.data["body"]) >= 5
+
     def test_the_guide_lists_its_recommendations(self, api, seeded_wiki):
         response = api.get(
             reverse("content:page-detail", kwargs={"slug": "best-gaming-pcs-1080p-high-fps"})

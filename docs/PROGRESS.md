@@ -430,6 +430,26 @@ security review, load test, production compose and deploy docs).
   Wagtail generated related-manager typing errors in `apps/content/models.py`;
   feature tests, lint and frontend checks are clean.
 
+## Wiki article and internal-link polish (2026-10-24)
+
+- Expanded the Ryzen 7 7800X3D article with architecture, cache caveats,
+  compatibility guidance, measured-benchmark context, and cooler advice.
+- Added a Ryzen 5 7600 wiki page; corrected ambiguous `7600` auto-link aliases
+  so the CPU mention no longer resolves to the Radeon RX 7600 entity.
+- Added a linkable DDR5 concept and expanded its compatibility and EXPO notes.
+- Added exact full-name aliases for ASUS TUF Gaming B650-PLUS and corrected
+  the board's published memory-capacity seed to 256 GB.
+- Removed the white hover card. Wiki links now use one blue style and navigate
+  to the published wiki page, falling back to the entity page when needed.
+- Added regression coverage for exact visible link phrases and published
+  destinations. `pytest apps/content/tests/test_wiki.py
+  apps/linking/tests/test_services.py` → 41 passed; Ruff check/format and
+  Nuxt typecheck are clean.
+- Reseeded the local wiki and ran `index_content`: 62 RAG chunks indexed.
+  Local SSR smoke checks returned HTTP 200 for both Ryzen pages; the Ryzen 7
+  API contains full-name links to the board, CPU and DDR5 pages, and the
+  rendered HTML no longer contains the hover card.
+
 
 
 

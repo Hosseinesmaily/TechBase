@@ -142,7 +142,7 @@ ENTITIES: list[EntitySeed] = [
         "brand": "amd",
         "category": "cpus",
         "summary_fa": "پردازنده شش هسته‌ای اقتصادی با سوکت AM5؛ انتخاب متعادل برای گیمینگ ۱۰۸۰p.",
-        "aliases": ["7600", "ریزن ۵ ۷۶۰۰"],
+        "aliases": ["Ryzen 5 7600", "7600 Ryzen 5", "ریزن ۵ ۷۶۰۰"],
         "common": {
             "socket": "AM5",
             "cores": 6,
@@ -329,7 +329,7 @@ ENTITIES: list[EntitySeed] = [
         "brand": "amd",
         "category": "gpus",
         "summary_fa": "کارت گرافیک اقتصادی ۱۰۸۰p با ۸ گیگابایت حافظه.",
-        "aliases": ["7600", "rx7600", "رادیون ۷۶۰۰"],
+        "aliases": ["Radeon RX 7600", "RX 7600", "rx7600", "رادیون ۷۶۰۰"],
         "common": {
             "tdp": 165,
             "vram_gb": 8,
@@ -440,12 +440,18 @@ ENTITIES: list[EntitySeed] = [
         "brand": "asus",
         "category": "motherboards",
         "summary_fa": "مادربرد AM5 میان‌رده با سه خروجی M.2 و پشتیبانی EXPO.",
-        "aliases": ["b650 plus", "b650", "تاف ب۶۵۰"],
+        "aliases": [
+            "ASUS TUF Gaming B650-PLUS",
+            "TUF Gaming B650-PLUS",
+            "b650 plus",
+            "b650",
+            "تاف ب۶۵۰",
+        ],
         "common": {
             "socket": "AM5",
             "memory_type": "DDR5",
             "memory_slots": 4,
-            "max_memory_gb": 128,
+            "max_memory_gb": 256,
             "form_factor": "ATX",
             "m2_slots": 3,
             "wifi": True,
@@ -709,6 +715,17 @@ ENTITIES: list[EntitySeed] = [
             "form_factor": "M.2 2280",
         },
         "extra": {"dram": False, "tbw": 600, "endurance_fa": "۶۰۰ ترابایت نوشتن"},
+    },
+    {
+        "slug": "ddr5",
+        "type": EntityType.CONCEPT,
+        "title": "DDR5",
+        "title_fa": "حافظهٔ DDR5",
+        "brand": "",
+        "category": "",
+        "summary_fa": "نسل پنجم حافظهٔ SDRAM؛ سازگاری آن به نوع پشتیبانی‌شده توسط پردازنده و مادربرد بستگی دارد.",
+        "aliases": ["DDR5 memory", "حافظه DDR5", "حافظهٔ DDR5"],
+        "common": {"memory_type": "DDR5"},
     },
 ]
 

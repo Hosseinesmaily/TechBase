@@ -8,7 +8,6 @@ const links = [
   { to: "/configurator", label: "اسمبل سیستم" },
   { to: "/compare", label: "مقایسه" },
   { to: "/chat", label: "دستیار" },
-  { to: "/account", label: "پنل من" },
 ]
 
 function isActive(path: string) {
@@ -43,6 +42,23 @@ function isActive(path: string) {
             </svg>
             <span>جست‌وجو در محصولات و راهنماها</span>
             <kbd dir="ltr" class="mr-8 rounded border border-slate-200 px-1.5 py-0.5 text-[10px]">/</kbd>
+          </NuxtLink>
+
+          <NuxtLink
+            to="/account"
+            aria-label="پنل من"
+            :aria-current="isActive('/account') ? 'page' : undefined"
+            title="پنل من"
+            class="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-slate-200 px-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 sm:px-3"
+            :class="isActive('/account') ? 'border-brand-200 bg-brand-50 text-brand-700' : ''"
+          >
+            <span class="grid h-7 w-7 place-items-center rounded-full bg-slate-100 text-slate-600" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="8" r="3.25" />
+                <path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke-linecap="round" />
+              </svg>
+            </span>
+            <span class="hidden sm:inline">پنل من</span>
           </NuxtLink>
         </div>
 

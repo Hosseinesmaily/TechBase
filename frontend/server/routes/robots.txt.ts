@@ -6,6 +6,7 @@ export default defineEventHandler((event) => {
   return `User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /adminpanel
 Disallow: /chat
 
 Sitemap: ${base}/sitemap.xml

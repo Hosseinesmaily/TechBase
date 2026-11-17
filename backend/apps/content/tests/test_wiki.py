@@ -90,11 +90,17 @@ class TestAutoLinkedWiki:
         with_section = EntityLink.objects.exclude(section_path="").count()
         assert with_section > 0
 
-    def test_red_links_exist_for_entities_without_pages(self, seeded_wiki):
+    def test_no_red_links_when_every_part_has_a_page(self, seeded_wiki):
+        """A red link is an entity without a published page.
+
+        The seed now gives every part a page (the generator fills the gaps), so
+        the backlog is empty — and any red link that does exist must still point
+        at a page-less entity.
+        """
         red = EntityLink.objects.filter(target_exists=False)
-        assert red.count() > 0
         for link in red:
             assert not link.target.wiki_pages.live().exists()
+        assert red.count() == 0
 
     def test_linked_entities_with_a_page_are_not_red(self, seeded_wiki):
         for link in EntityLink.objects.filter(target_exists=True):
@@ -180,7 +186,8 @@ class TestWikiApiAfterSeed:
         assert response.data["product"]["price"]
         assert response.data["has_page"] is True
 
-    def test_redlinks_endpoint_lists_the_backlog(self, api, seeded_wiki):
+    def test_redlinks_endpoint_is_empty_for_a_complete_catalog(self, api, seeded_wiki):
         response = api.get(reverse("linking:redlinks"))
         assert response.status_code == 200
-        assert response.data["count"] > 0
+        # Every seeded part has a published page, so there is no backlog left.
+        assert response.data["count"] == 0

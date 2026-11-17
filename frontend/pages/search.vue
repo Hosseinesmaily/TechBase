@@ -65,6 +65,28 @@ const { data: suggestions } = await useFetch<{ suggestions: Suggestion[] }>(
 
 const showSuggestions = ref(false)
 
+/**
+ * The recent searches live where they are used: inside the search box, and only
+ * while it is open. They are the visitor's own queries (stored in this browser),
+ * deduplicated, and they never occupy the page.
+ */
+const showRecentSearches = computed(
+  () => showSuggestions.value && !q.value.trim() && shelf.recentSearches.value.length > 0,
+)
+
+function useRecentSearch(term: string) {
+  q.value = term
+  runSearch()
+}
+
+function removeRecentSearch(term: string) {
+  shelf.removeSearch(term)
+}
+
+function clearRecentSearches() {
+  shelf.clearSearches()
+}
+
 /** Close the suggestion list a moment after the input loses focus, so a
  *  click on a suggestion still registers. */
 function closeSuggestionsLater() {
@@ -168,20 +190,57 @@ const backendLabel = computed(() => {
             @focus="showSuggestions = true"
             @blur="closeSuggestionsLater"
           />
-          <ul
-            v-if="showSuggestions && suggestions.suggestions.length"
+          <div
+            v-if="showSuggestions && (suggestions.suggestions.length || showRecentSearches)"
             class="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-surface shadow-lg"
           >
-            <li v-for="s in suggestions.suggestions" :key="s.id">
-              <button
-                type="button"
-                class="block w-full px-3 py-2 text-start text-sm hover:bg-slate-50"
-                @mousedown.prevent="pickSuggestion(s)"
-              >
-                {{ s.text }}
-              </button>
-            </li>
-          </ul>
+            <div v-if="suggestions.suggestions.length">
+              <p class="px-3 pt-2 text-[11px] font-medium text-slate-400">پیشنهادها</p>
+              <ul>
+                <li v-for="s in suggestions.suggestions" :key="s.id">
+                  <button
+                    type="button"
+                    class="block w-full px-3 py-2 text-start text-sm hover:bg-slate-50"
+                    @mousedown.prevent="pickSuggestion(s)"
+                  >
+                    {{ s.text }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="showRecentSearches" class="border-t border-slate-100">
+              <div class="flex items-center justify-between px-3 pt-2">
+                <p class="text-[11px] font-medium text-slate-400">جستوجوهای اخیر شما</p>
+                <button
+                  type="button"
+                  class="text-[11px] text-slate-500 underline underline-offset-2 hover:text-rose-600"
+                  @mousedown.prevent="clearRecentSearches"
+                >
+                  پاک کردن تاریخچه
+                </button>
+              </div>
+              <ul class="pb-1">
+                <li v-for="term in shelf.recentSearches.value" :key="term" class="flex items-center">
+                  <button
+                    type="button"
+                    class="min-w-0 flex-1 truncate px-3 py-2 text-start text-sm hover:bg-slate-50"
+                    @mousedown.prevent="useRecentSearch(term)"
+                  >
+                    {{ term }}
+                  </button>
+                  <button
+                    type="button"
+                    class="me-2 rounded px-2 py-1 text-xs text-slate-400 hover:text-rose-600"
+                    :aria-label="`حذف ${term} از جستوجوهای اخیر`"
+                    @mousedown.prevent="removeRecentSearch(term)"
+                  >
+                    ×
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
         <button
           type="submit"
@@ -250,7 +309,7 @@ const backendLabel = computed(() => {
           <span v-if="searchIntent.resolution"> در {{ searchIntent.resolution }}</span>
           مرتب شده‌اند. رتبه‌بندی با موجودی و دادهٔ بنچمارک انجام می‌شود.
         </p>
-        <NuxtLink v-if="comparedCount >= 2" to="/compare" class="shrink-0 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">
+        <NuxtLink v-if="comparedCount >= 2" to="/compare" class="btn-primary shrink-0 px-3 text-xs">
           مقایسهٔ {{ comparedCount }} انتخاب
         </NuxtLink>
       </div>

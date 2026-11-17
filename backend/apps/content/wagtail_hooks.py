@@ -101,4 +101,4 @@ def register_editor_permissions():
 
 def stale_pages_queryset():
     """Pages past their review date — used by the menu item and the report."""
-    return WikiPage.objects.live().filter(review_by__lt=timezone.now().date())
+    return WikiPage.objects.live().filter(review_by__lt=timezone.localdate())

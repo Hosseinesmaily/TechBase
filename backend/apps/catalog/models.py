@@ -149,6 +149,23 @@ class Entity(UUIDModel, TimeStampedModel):
                 terms.append(brand.name_fa)
         return [t for t in terms if t]
 
+    @property
+    def wiki_slug(self) -> str:
+        """The slug of the *published* wiki article about this entity.
+
+        This is the one real relationship between a catalog product and the wiki: the
+        page is bound to the entity (`WikiPage.entity`), so the address is read
+        from the database instead of being guessed from the product name.
+
+        A page that exists but was never published has no address on the site
+        yet, so it is not offered (no dead link, no 404). When the caller
+        prefetched `wiki_pages` this costs no query.
+        """
+        for page in self.wiki_pages.all():
+            if page.live and page.first_published_at is not None:
+                return str(page.slug)
+        return ""
+
 
 class Product(UUIDModel, TimeStampedModel):
     """A market SKU: something you can actually buy, with a price and a stock count."""
@@ -167,7 +184,19 @@ class Product(UUIDModel, TimeStampedModel):
     # this lets the catalog distinguish a price refresh from any other edit.
     price_updated_at = models.DateTimeField(null=True, blank=True)
     warranty_months = models.PositiveSmallIntegerField(default=0)
+    # An external image address, kept for feeds that supply one.
     image_url = models.URLField(blank=True)
+    # The uploaded image. Wagtail owns the file: it validates that the upload is a
+    # real image, stores it, and produces the renditions the pages need — so the
+    # database only has to remember which image belongs to this SKU.
+    image = models.ForeignKey(
+        "wagtailimages.Image",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="تصویر محصول",
+    )
 
     class Meta:
         verbose_name = "محصول"
@@ -188,6 +217,34 @@ class Product(UUIDModel, TimeStampedModel):
     @property
     def display_title(self) -> str:
         return self.title_fa or self.title
+
+    @property
+    def image_thumbnail_url(self) -> str:
+        """A small rendition for the product card; empty when there is no image."""
+        if not self.image_id:
+            return ""
+        try:
+            # `max-` fits the picture inside the card box without cropping or
+            # distorting it, so the product keeps its real proportions.
+            return self.image.get_rendition("max-400x300").url
+        except Exception:
+            # A broken or missing file must never break the catalog listing.
+            return ""
+
+    @property
+    def image_full_url(self) -> str:
+        """The wider rendition used on a detail view."""
+        if not self.image_id:
+            return ""
+        try:
+            return self.image.get_rendition("width-1200").url
+        except Exception:
+            return ""
+
+    @property
+    def display_image_url(self) -> str:
+        """Whatever can be shown: the uploaded image, else the external address."""
+        return self.image_full_url or self.image_thumbnail_url or self.image_url
 
 
 class ComponentSpec(UUIDModel, TimeStampedModel):

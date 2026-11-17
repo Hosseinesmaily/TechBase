@@ -53,9 +53,15 @@ export function useChat() {
     const text = question.trim()
     if (!text || streaming.value) return
 
-    const queryForAgent = clarificationContext.value
-      ? `${clarificationContext.value}\nپاسخ تکمیلی کاربر: ${text}`
-      : text
+    // The conversation so far, captured *before* this turn is added: the backend
+    // uses it to remember what the user already said (a budget, a use case) and
+    // to keep a short follow-up on the same topic.
+    const history = messages.value
+      .filter((message) => message.role === "user" && message.text)
+      .map((message) => ({ role: "user", content: message.text }))
+      .slice(-6)
+
+    const queryForAgent = text
     clarificationContext.value = null
 
     push({ role: "user", text })
@@ -69,7 +75,7 @@ export function useChat() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: queryForAgent, language: "fa", stream: true }),
+        body: JSON.stringify({ query: queryForAgent, language: "fa", stream: true, history }),
       })
 
       if (!response.ok || !response.body) {

@@ -52,12 +52,19 @@ class ChatView(APIView):
         should_stream = request.data.get("stream", True)
         should_stream = should_stream not in (False, "false", 0, "0")
 
+        # The conversation so far, so the assistant does not ask again for a budget
+        # the user already gave. A malformed value is ignored, never fatal.
+        history = request.data.get("history") or []
+        if not isinstance(history, list):
+            history = []
+
         if not should_stream:
             result = run_agent(
                 query,
                 limit=limit,
                 language=language,
                 ask_clarifying=ask_clarifying,
+                history=history,
             )
             return Response(result.as_dict())
 
@@ -69,6 +76,7 @@ class ChatView(APIView):
                 limit=limit,
                 language=language,
                 ask_clarifying=ask_clarifying,
+                history=history,
             )
             yield _event(
                 {
@@ -259,8 +267,11 @@ class CompareView(APIView):
                 "game": row.game,
                 "game_fa": row.game_fa,
                 "resolution": row.resolution,
+                "preset": row.preset,
                 "avg_fps": row.avg_fps,
                 "p1_low": row.p1_low,
+                "tested_at": row.tested_at.isoformat(),
+                "source": row.source,
             }
             for row in rows
         ]

@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
@@ -11,6 +13,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # API
     path("api/v1/", include("apps.core.urls")),
+    path("api/v1/accounts/", include("apps.accounts.urls")),
     path("api/v1/catalog/", include("apps.catalog.urls")),
     path("api/v1/compat/", include("apps.compat.urls")),
     path("api/v1/benchmarks/", include("apps.benchmarks.urls")),
@@ -18,6 +21,7 @@ urlpatterns = [
     path("api/v1/wiki/", include("apps.content.urls")),
     path("api/v1/linking/", include("apps.linking.urls")),
     path("api/v1/ai/", include("apps.ai.urls")),
+    path("api/v1/support/", include("apps.support.urls")),
     # The Wagtail editorial admin.
     path("cms/", include(wagtailadmin_urls)),
     path("cms/documents/", include(wagtaildocs_urls)),
@@ -42,3 +46,9 @@ def homepage(_request) -> JsonResponse:
 
 
 urlpatterns.insert(0, path("", homepage))
+
+# The uploaded images and documents (Wagtail's media) are served by Django while
+# DEBUG is on, which is all the development stack needs. In production the reverse
+# proxy serves /media/ from the media volume — see docs/DEPLOY.md.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

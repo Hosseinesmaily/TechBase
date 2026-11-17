@@ -27,3 +27,17 @@ export function formatDate(iso: string | null | undefined): string {
     day: "numeric",
   }).format(date)
 }
+
+/**
+ * Format a warranty length in months, Persian-first: 60 → «گارانتی ۶۰ ماهه».
+ *
+ * The number always comes from the product's own `warranty_months`, so nothing
+ * is hard-coded in the UI, and a product without a warranty renders nothing.
+ */
+export function formatWarranty(months: number | null | undefined): string {
+  if (!months || months <= 0) {
+    return ""
+  }
+  const value = new Intl.NumberFormat("fa-IR").format(months)
+  return `گارانتی ${value} ماهه`
+}

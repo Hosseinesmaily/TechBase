@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     "taggit",
     # project apps
     "apps.core",
+    "apps.accounts",
+    "apps.support",
     "apps.catalog",
     "apps.compat",
     "apps.benchmarks",
@@ -145,7 +147,10 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
-MEDIA_URL = "media/"
+# Leading slash on purpose: this value becomes the URL of every uploaded image,
+# and a relative URL breaks as soon as it is used from a nested page
+# (/wiki/foo/media/...).
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -169,6 +174,10 @@ WAGTAILSEARCH_BACKENDS = {
 # Editorial workflow: draft → review → published (DECISIONS A1).
 WAGTAIL_WORKFLOW_ENABLED = True
 WAGTAILIMAGES_IMAGE_MODEL = "wagtailimages.Image"
+# Uploads are capped once, and the panel's upload endpoint reads the same limit
+# (apps/core/images.py). A product photo or an article illustration, not a print
+# master.
+WAGTAILIMAGES_MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 WAGTAILDOCS_DOCUMENT_MODEL = "wagtaildocs.Document"
 
 # --- DRF / schema ---

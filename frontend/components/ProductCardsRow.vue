@@ -43,6 +43,7 @@ function snapshot(product: ProductCardData) {
           {{ shelf.isCompared(product.sku) ? "حذف از مقایسه" : "مقایسه" }}
         </button>
       </div>
+      <AddToCartButton :sku="product.sku" :in-stock="product.in_stock" class="mt-2" />
       <NuxtLink :to="`/entity/${product.entity_slug}/`" class="mt-3 text-xs font-medium text-brand-700 hover:underline">مشخصات قطعه و راهنمای مرتبط ←</NuxtLink>
     </div>
   </div>

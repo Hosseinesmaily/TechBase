@@ -307,5 +307,5 @@ def stale_pages(days: int = 30) -> list:
     """Pages whose review date is in the past (or soon)."""
     from apps.content.models import WikiPage
 
-    cutoff = timezone.now().date() - timedelta(days=days)
+    cutoff = timezone.localdate() - timedelta(days=days)
     return list(WikiPage.objects.live().filter(review_by__lt=cutoff).order_by("review_by"))

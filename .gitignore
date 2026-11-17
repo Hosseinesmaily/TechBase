@@ -21,6 +21,11 @@ db.sqlite3
 staticfiles/
 media/
 
+# the image drop zone: keep the folder and its README, ignore the photos
+backend/seed_images/*
+!backend/seed_images/README.md
+!backend/seed_images/.gitkeep
+
 # node / nuxt
 node_modules/
 .nuxt/

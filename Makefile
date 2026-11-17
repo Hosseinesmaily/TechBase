@@ -19,7 +19,7 @@ else
   PY_BE := $(PY)
 endif
 
-.PHONY: setup run test lint fmt typecheck migrate seed seed-wiki index-content reindex eval down logs prod-up prod-down load-test cache-invalidate
+.PHONY: setup run test lint fmt typecheck migrate seed seed-wiki index-content reindex eval down logs prod-up prod-down load-test cache-invalidate image-audit import-images placeholders
 
 setup: ## create .env, build images, migrate
 ifeq ($(LOCAL),1)
@@ -88,3 +88,14 @@ load-test: ## a small load test against the running API
 
 cache-invalidate: ## drop the semantic cache (after a catalog change)
 	$(PY_BE) manage.py invalidate_cache
+
+image-audit: ## list the products/pages without an image (--names for the file names)
+	$(PY_BE) manage.py image_audit --names
+
+import-images: ## attach the photos dropped in backend/seed_images/ (dry run first)
+	$(PY_BE) manage.py import_images --dry-run
+	$(PY_BE) manage.py import_images
+
+placeholders: ## write a named placeholder image for every slot that has none, then link them
+	$(PY_BE) manage.py placeholder_images
+	$(PY_BE) manage.py import_images

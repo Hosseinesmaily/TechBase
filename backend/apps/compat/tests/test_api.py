@@ -147,3 +147,93 @@ class TestRuleListEndpoint:
         response = api.get(reverse("compat:rule-list"))
         assert response.status_code == 200
         assert response.data[0]["code"] == "SOCKET_MATCH"
+
+
+class TestCandidateEvaluation:
+    """`candidates` lets the configurator badge every card from the same engine.
+
+    The important part is the honesty of the three states: compatible (rules ran
+    and found nothing), incompatible (a blocking finding involving the candidate),
+    and "not enough information yet" (no rule could compare anything) — the last
+    one must never be presented as compatible.
+    """
+
+    def test_a_matching_board_is_reported_as_compatible(self, api, catalog):
+        response = api.post(
+            reverse("compat:check"),
+            {"parts": ["ryzen-7-7800x3d"], "candidates": ["asus-b650"]},
+            format="json",
+        )
+        assert response.status_code == 200
+        result = response.data["candidate_results"]["asus-b650"]
+        assert result["known"] is True
+        assert result["verdict"] == "ok"
+        assert result["checked_rules"] >= 1
+        assert result["has_specs"] is True
+        assert result["findings"] == []
+
+    def test_an_incompatible_board_is_blocked_and_carries_the_reason(self, api, catalog):
+        response = api.post(
+            reverse("compat:check"),
+            {"parts": ["ryzen-7-7800x3d"], "candidates": ["gigabyte-b760m"]},
+            format="json",
+        )
+        result = response.data["candidate_results"]["gigabyte-b760m"]
+        assert result["verdict"] == "block"
+        assert result["findings"][0]["rule_code"] == "SOCKET_MATCH"
+        assert "AM5" in result["findings"][0]["message"]
+
+    def test_the_verdict_is_per_candidate(self, api, catalog):
+        """One bad candidate must not colour the others."""
+        response = api.post(
+            reverse("compat:check"),
+            {
+                "parts": ["ryzen-7-7800x3d"],
+                "candidates": ["asus-b650", "gigabyte-b760m"],
+            },
+            format="json",
+        )
+        results = response.data["candidate_results"]
+        assert results["asus-b650"]["verdict"] == "ok"
+        assert results["gigabyte-b760m"]["verdict"] == "block"
+
+    def test_no_rule_could_compare_yet(self, api, catalog):
+        """A board chosen while another board is already selected: nothing to check."""
+        response = api.post(
+            reverse("compat:check"),
+            {"parts": ["asus-b650"], "candidates": ["gigabyte-b760m"]},
+            format="json",
+        )
+        result = response.data["candidate_results"]["gigabyte-b760m"]
+        assert result["checked_rules"] == 0
+        assert result["verdict"] == "ok"
+
+    def test_an_unknown_candidate_is_not_silently_dropped(self, api, catalog):
+        response = api.post(
+            reverse("compat:check"),
+            {"parts": ["ryzen-7-7800x3d"], "candidates": ["not-a-real-part"]},
+            format="json",
+        )
+        result = response.data["candidate_results"]["not-a-real-part"]
+        assert result["known"] is False
+        assert result["verdict"] == "unknown"
+
+    def test_without_candidates_the_response_is_unchanged(self, api, catalog):
+        response = api.post(
+            reverse("compat:check"),
+            {"parts": ["ryzen-7-7800x3d", "asus-b650"]},
+            format="json",
+        )
+        assert "candidate_results" not in response.data
+        assert response.data["verdict"] == "ok"
+
+    def test_too_many_candidates_is_a_bad_request(self, api, catalog):
+        response = api.post(
+            reverse("compat:check"),
+            {
+                "parts": ["ryzen-7-7800x3d"],
+                "candidates": [f"part-{index}" for index in range(41)],
+            },
+            format="json",
+        )
+        assert response.status_code == 400

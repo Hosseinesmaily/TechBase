@@ -17,6 +17,7 @@ Verdicts
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -30,6 +31,19 @@ INFO = "info"
 OK = "ok"
 
 _SEVERITY_ORDER = {BLOCK: 0, WARN: 1, INFO: 2}
+
+
+def _as_set(value: Any) -> set[str]:
+    """Normalise a spec that may be a string, a list or a "DDR4/DDR5" range.
+
+    `memory_type` is a single token in the seed, but real data can carry a list
+    or a slash-separated range — all three mean the same thing to a rule.
+    """
+    if value is None:
+        return set()
+    if isinstance(value, (list, tuple, set)):
+        return {str(item).strip() for item in value if str(item).strip()}
+    return {part.strip() for part in re.split(r"[,|/،]", str(value)) if part.strip()}
 
 
 @dataclass(frozen=True)
@@ -240,7 +254,7 @@ class PsuWattageRule:
 
     code = "PSU_WATTAGE"
     category_a = EntityType.PSU
-    category_b = EntityType.PREBUILT
+    category_b = EntityType.GPU
     default_severity = BLOCK
     params: dict = {"headroom_ratio": 1.25}
 
@@ -291,7 +305,11 @@ class PsuWattageRule:
 
 
 class GpuClearanceRule:
-    """GPU length must fit the case; cooler height must fit the case."""
+    """The graphics card's length must fit the case's usable space.
+
+    Only the GPU is judged here. The cooler has its own rule (`CoolerFitRule`),
+    so a cooler candidate is credited for exactly the check that compares it.
+    """
 
     code = "GPU_CLEARANCE"
     category_a = EntityType.CASE
@@ -303,12 +321,14 @@ class GpuClearanceRule:
         case = ctx.of_type(EntityType.CASE)
         if case is None:
             return []
-        findings: list[Finding] = []
-
         max_gpu = case.number("max_gpu_length_mm")
+        if not max_gpu:
+            return []
+
+        findings: list[Finding] = []
         for gpu in ctx.by_type(EntityType.GPU):
             length = gpu.number("length_mm")
-            if length and max_gpu and length > max_gpu:
+            if length and length > max_gpu:
                 a, b = ctx.pair(gpu, case)
                 findings.append(
                     Finding(
@@ -319,8 +339,57 @@ class GpuClearanceRule:
                             f"allows up to {max_gpu:.0f}mm."
                         ),
                         message_fa=(
-                            f"کارت گرافیک بلند است: {gpu.title} با طول {length:.0f} میلی‌متر "
-                            f"از حداکثر {max_gpu:.0f} میلی‌متر کیس {case.title} بیشتر است."
+                            f"کارت گرافیک بلند است: {gpu.title} با طول {length:.0f} میلیمتر "
+                            f"از حداکثر {max_gpu:.0f} میلیمتر کیس {case.title} بیشتر است."
+                        ),
+                        a_slug=a.slug,
+                        b_slug=b.slug,
+                        a_title=a.title,
+                        b_title=b.title,
+                    )
+                )
+        return findings
+
+
+class CoolerFitRule:
+    """The CPU cooler must physically fit the case.
+
+    An air cooler is limited by its height against the case's
+    ``max_cooler_height_mm``; a liquid cooler (AIO) by its radiator size against
+    the case's ``radiator_support_mm``. A number missing on *either* side is not
+    a pass: the rule stays silent and `services.evaluate_candidates` reports the
+    candidate as not determined instead of compatible.
+    """
+
+    code = "COOLER_FIT"
+    category_a = EntityType.CASE
+    category_b = EntityType.COOLER
+    default_severity = BLOCK
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        case = ctx.of_type(EntityType.CASE)
+        if case is None:
+            return []
+        max_height = case.number("max_cooler_height_mm")
+        max_radiator = case.number("radiator_support_mm")
+
+        findings: list[Finding] = []
+        for cooler in ctx.by_type(EntityType.COOLER):
+            height = cooler.number("height_mm")
+            if height and max_height and height > max_height:
+                a, b = ctx.pair(cooler, case)
+                findings.append(
+                    Finding(
+                        rule_code=self.code,
+                        severity=self.default_severity,
+                        message=(
+                            f"Cooler too tall: {cooler.title} is {height:.0f}mm but "
+                            f"{case.title} allows up to {max_height:.0f}mm."
+                        ),
+                        message_fa=(
+                            f"خنک‌کننده بلند است: {cooler.title} با ارتفاع {height:.0f} میلیمتر "
+                            f"از حداکثر {max_height:.0f} میلیمتر کیس {case.title} بیشتر است."
                         ),
                         a_slug=a.slug,
                         b_slug=b.slug,
@@ -329,22 +398,130 @@ class GpuClearanceRule:
                     )
                 )
 
-        max_cooler = case.number("max_cooler_height_mm")
-        for cooler in ctx.by_type(EntityType.COOLER):
-            height = cooler.number("height_mm")
-            if height and max_cooler and height > max_cooler:
+            radiator = cooler.number("radiator_mm")
+            if radiator and max_radiator and radiator > max_radiator:
                 a, b = ctx.pair(cooler, case)
                 findings.append(
                     Finding(
                         rule_code=self.code,
                         severity=self.default_severity,
                         message=(
-                            f"Cooler too tall: {cooler.title} is {height:.0f}mm but "
-                            f"{case.title} allows up to {max_cooler:.0f}mm."
+                            f"Radiator does not fit: {cooler.title} needs {radiator:.0f}mm "
+                            f"but {case.title} supports up to {max_radiator:.0f}mm."
                         ),
                         message_fa=(
-                            f"خنک‌کننده بلند است: {cooler.title} با ارتفاع {height:.0f} میلی‌متر "
-                            f"از حداکثر {max_cooler:.0f} میلی‌متر کیس {case.title} بیشتر است."
+                            f"رادیاتور جا نمی‌شود: {cooler.title} به رادیاتور {radiator:.0f} "
+                            f"میلیمتری نیاز دارد اما کیس {case.title} تا {max_radiator:.0f} "
+                            f"میلیمتر پشتیبانی می‌کند."
+                        ),
+                        a_slug=a.slug,
+                        b_slug=b.slug,
+                        a_title=a.title,
+                        b_title=b.title,
+                    )
+                )
+        return findings
+
+
+class StorageFitRule:
+    """M.2/NVMe storage needs an M.2 slot; a SATA drive only needs a SATA port."""
+
+    code = "STORAGE_FIT"
+    category_a = EntityType.MOTHERBOARD
+    category_b = EntityType.STORAGE
+    default_severity = BLOCK
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        board = ctx.of_type(EntityType.MOTHERBOARD)
+        if board is None:
+            return []
+        m2_slots = board.number("m2_slots")
+        board_gen = board.number("pcie_gen")
+        findings: list[Finding] = []
+        for disk in ctx.by_type(EntityType.STORAGE):
+            interface = str(disk.spec("interface") or "")
+            form = str(disk.spec("form_factor") or "")
+            is_m2 = (
+                "M.2" in form.upper() or "M.2" in interface.upper() or "NVME" in interface.upper()
+            )
+            if is_m2 and m2_slots is not None and m2_slots < 1:
+                a, b = ctx.pair(disk, board)
+                findings.append(
+                    Finding(
+                        rule_code=self.code,
+                        severity=BLOCK,
+                        message=(
+                            f"{disk.title} is an M.2/NVMe drive but {board.title} has no M.2 slot."
+                        ),
+                        message_fa=(
+                            f"{disk.title} از نوع M.2/NVMe است اما مادربرد {board.title} "
+                            f"اسلات M.2 ندارد."
+                        ),
+                        a_slug=a.slug,
+                        b_slug=b.slug,
+                        a_title=a.title,
+                        b_title=b.title,
+                    )
+                )
+                continue
+            match = re.search(r"PCIe\s*(\d)", interface, re.IGNORECASE)
+            disk_gen = float(match.group(1)) if match else 0.0
+            if disk_gen and board_gen and disk_gen > board_gen:
+                a, b = ctx.pair(disk, board)
+                findings.append(
+                    Finding(
+                        rule_code=self.code,
+                        severity=WARN,
+                        message=(
+                            f"{disk.title} is PCIe {disk_gen:.0f} but {board.title} provides "
+                            f"PCIe {board_gen:.0f}; it will run at the lower generation."
+                        ),
+                        message_fa=(
+                            f"{disk.title} از PCIe نسل {disk_gen:.0f} است اما {board.title} "
+                            f"PCIe نسل {board_gen:.0f} دارد؛ با نسل کمتر کار می‌کند."
+                        ),
+                        a_slug=a.slug,
+                        b_slug=b.slug,
+                        a_title=a.title,
+                        b_title=b.title,
+                    )
+                )
+        return findings
+
+
+class PsuFitRule:
+    """A power supply has to physically fit the case."""
+
+    code = "PSU_FIT"
+    category_a = EntityType.CASE
+    category_b = EntityType.PSU
+    default_severity = BLOCK
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        case = ctx.of_type(EntityType.CASE)
+        if case is None:
+            return []
+        max_len = case.number("max_psu_length_mm")
+        if not max_len:
+            return []
+        findings: list[Finding] = []
+        for psu in ctx.by_type(EntityType.PSU):
+            length = psu.number("length_mm")
+            if length and length > max_len:
+                a, b = ctx.pair(psu, case)
+                findings.append(
+                    Finding(
+                        rule_code=self.code,
+                        severity=self.default_severity,
+                        message=(
+                            f"{psu.title} is {length:.0f}mm long but {case.title} allows up to "
+                            f"{max_len:.0f}mm."
+                        ),
+                        message_fa=(
+                            f"طول {psu.title} برابر {length:.0f} میلی‌متر است اما کیس "
+                            f"{case.title} تا {max_len:.0f} میلی‌متر جا می‌دهد."
                         ),
                         a_slug=a.slug,
                         b_slug=b.slug,
@@ -395,6 +572,86 @@ class CoolerSocketSupportRule:
                 )
             ]
         return []
+
+
+class GpuInterfaceRule:
+    """A card works in a lower-generation PCIe slot, but the gap is worth saying."""
+
+    code = "GPU_INTERFACE"
+    category_a = EntityType.MOTHERBOARD
+    category_b = EntityType.GPU
+    default_severity = WARN
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        board = ctx.of_type(EntityType.MOTHERBOARD)
+        if board is None:
+            return []
+        board_gen = board.number("pcie_gen")
+        if not board_gen:
+            return []
+        findings: list[Finding] = []
+        for gpu in ctx.by_type(EntityType.GPU):
+            gpu_gen = gpu.number("pcie_gen")
+            if gpu_gen and gpu_gen > board_gen:
+                a, b = ctx.pair(gpu, board)
+                findings.append(
+                    Finding(
+                        rule_code=self.code,
+                        severity=self.default_severity,
+                        message=(
+                            f"{gpu.title} is a PCIe {gpu_gen:.0f} card but {board.title} provides "
+                            f"PCIe {board_gen:.0f}; it will run at the lower generation."
+                        ),
+                        message_fa=(
+                            f"{gpu.title} از PCIe نسل {gpu_gen:.0f} است اما {board.title} "
+                            f"PCIe نسل {board_gen:.0f} دارد؛ با نسل کمتر کار می‌کند."
+                        ),
+                        a_slug=a.slug,
+                        b_slug=b.slug,
+                        a_title=a.title,
+                        b_title=b.title,
+                    )
+                )
+        return findings
+
+
+class CoolerCapacityRule:
+    """The cooler's heat rating must cover the CPU's design power."""
+
+    code = "COOLER_CAPACITY"
+    category_a = EntityType.COOLER
+    category_b = EntityType.CPU
+    default_severity = WARN
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        cooler = ctx.of_type(EntityType.COOLER)
+        cpu = ctx.of_type(EntityType.CPU)
+        if cooler is None or cpu is None:
+            return []
+        rating = cooler.number("tdp_rating")
+        tdp = cpu.number("tdp")
+        if not rating or not tdp or rating >= tdp:
+            return []
+        a, b = ctx.pair(cooler, cpu)
+        return [
+            Finding(
+                rule_code=self.code,
+                severity=self.default_severity,
+                message=(
+                    f"{cooler.title} is rated for {rating:.0f}W but {cpu.title} is a {tdp:.0f}W part."
+                ),
+                message_fa=(
+                    f"ظرفیت خنک‌کنندگی {cooler.title} حدود {rating:.0f} وات است اما مصرف "
+                    f"{cpu.title} حدود {tdp:.0f} وات است."
+                ),
+                a_slug=a.slug,
+                b_slug=b.slug,
+                a_title=a.title,
+                b_title=b.title,
+            )
+        ]
 
 
 class PsuConnectorRule:
@@ -467,6 +724,90 @@ class PsuConnectorRule:
         return findings
 
 
+class MemoryFitRule:
+    """A memory kit must fit the board: module count, capacity and rated speed.
+
+    More modules than slots, or more capacity than the board supports, is a
+    block. Running the kit above the board's rated speed is only a warning: it
+    still works, at a lower speed or through the board's memory profile.
+    """
+
+    code = "MEMORY_FIT"
+    category_a = EntityType.MOTHERBOARD
+    category_b = EntityType.RAM
+    default_severity = BLOCK
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        board = ctx.of_type(EntityType.MOTHERBOARD)
+        if board is None:
+            return []
+        slots = board.number("memory_slots")
+        max_gb = board.number("max_memory_gb")
+        max_speed = board.number("max_memory_speed")
+
+        findings: list[Finding] = []
+        for ram in ctx.by_type(EntityType.RAM):
+            modules = ram.number("modules")
+            capacity = ram.number("capacity_gb")
+            speed = ram.number("speed_mhz")
+            if modules and slots and modules > slots:
+                findings.append(
+                    self._make(
+                        ctx,
+                        ram,
+                        board,
+                        BLOCK,
+                        f"{ram.title} uses {modules:.0f} modules but {board.title} has {slots:.0f} slots.",
+                        f"{ram.title} {modules:.0f} ماژول دارد اما مادربرد {board.title} فقط {slots:.0f} اسلات دارد.",
+                    )
+                )
+            if capacity and max_gb and capacity > max_gb:
+                findings.append(
+                    self._make(
+                        ctx,
+                        ram,
+                        board,
+                        BLOCK,
+                        f"{ram.title} is {capacity:.0f}GB but {board.title} supports up to {max_gb:.0f}GB.",
+                        f"ظرفیت {ram.title} برابر {capacity:.0f} گیگابایت است اما مادربرد {board.title} تا {max_gb:.0f} گیگابایت پشتیبانی می‌کند.",
+                    )
+                )
+            if speed and max_speed and speed > max_speed:
+                findings.append(
+                    self._make(
+                        ctx,
+                        ram,
+                        board,
+                        WARN,
+                        f"{ram.title} runs at {speed:.0f}MHz, above the {max_speed:.0f}MHz {board.title} is rated for.",
+                        f"سرعت {ram.title} برابر {speed:.0f} مگاهرتز است و از نرخ {max_speed:.0f} مگاهرتز مادربرد {board.title} بیشتر است؛ با سرعت کمتر کار می‌کند.",
+                    )
+                )
+        return findings
+
+    def _make(
+        self,
+        ctx: CheckContext,
+        ram: PartContext,
+        board: PartContext,
+        severity: str,
+        message: str,
+        message_fa: str,
+    ) -> Finding:
+        a, b = ctx.pair(ram, board)
+        return Finding(
+            rule_code=self.code,
+            severity=severity,
+            message=message,
+            message_fa=message_fa,
+            a_slug=a.slug,
+            b_slug=b.slug,
+            a_title=a.title,
+            b_title=b.title,
+        )
+
+
 class PrebuiltFitRule:
     """For prebuilt PCs: the listed parts must be compatible with each other."""
 
@@ -509,6 +850,95 @@ class PrebuiltFitRule:
         return findings
 
 
+class ChipsetMatchRule:
+    """The board's chipset must belong to the CPU's socket family.
+
+    The map is socket-level on purpose: a chipset family belongs to exactly one
+    socket family (B650 → AM5, B760 → LGA1700). It does not invent a per-CPU
+    support list — the socket already pins that.
+    """
+
+    code = "CHIPSET_MATCH"
+    category_a = EntityType.CPU
+    category_b = EntityType.MOTHERBOARD
+    default_severity = BLOCK
+    params: dict = {}
+
+    SOCKET_CHIPSETS: dict[str, set[str]] = {
+        "AM5": {"A620", "B650", "B650E", "X670", "X670E", "B840", "B850", "X870", "X870E"},
+        "LGA1700": {"H610", "B660", "B760", "H670", "H770", "Z690", "Z790", "W680"},
+    }
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        cpu = ctx.of_type(EntityType.CPU)
+        board = ctx.of_type(EntityType.MOTHERBOARD)
+        if cpu is None or board is None:
+            return []
+        socket = str(cpu.spec("socket") or "").strip().upper()
+        chipset = str(board.spec("chipset") or "").strip().upper()
+        family = self.SOCKET_CHIPSETS.get(socket)
+        if not family or not chipset or chipset in family:
+            return []
+        a, b = ctx.pair(cpu, board)
+        return [
+            Finding(
+                rule_code=self.code,
+                severity=self.default_severity,
+                message=(
+                    f"Chipset {chipset} is not a {socket} chipset: {cpu.title} needs a {socket} "
+                    f"board but {board.title} is {chipset}."
+                ),
+                message_fa=(
+                    f"چیپست {chipset} متعلق به سوکت {socket} نیست: {cpu.title} به مادربرد "
+                    f"{socket} نیاز دارد اما {board.title} چیپست {chipset} دارد."
+                ),
+                a_slug=a.slug,
+                b_slug=b.slug,
+                a_title=a.title,
+                b_title=b.title,
+            )
+        ]
+
+
+class CpuMemorySupportRule:
+    """The kit's memory type must be supported by the CPU's memory controller.
+
+    A DDR4 kit cannot be driven by a DDR5-only controller whatever the board
+    says; the board check (`RAM_TYPE_MATCH`) and this one are independent.
+    """
+
+    code = "CPU_MEMORY_SUPPORT"
+    category_a = EntityType.CPU
+    category_b = EntityType.RAM
+    default_severity = BLOCK
+    params: dict = {}
+
+    def check(self, ctx: CheckContext) -> list[Finding]:
+        cpu = ctx.of_type(EntityType.CPU)
+        ram = ctx.of_type(EntityType.RAM)
+        if cpu is None or ram is None:
+            return []
+        supported = {item.upper() for item in _as_set(cpu.spec("memory_type"))}
+        wanted = str(ram.spec("memory_type") or "").strip()
+        if not supported or not wanted or wanted.upper() in supported:
+            return []
+        a, b = ctx.pair(cpu, ram)
+        return [
+            Finding(
+                rule_code=self.code,
+                severity=self.default_severity,
+                message=f"{cpu.title} does not support {wanted} memory ({ram.title}).",
+                message_fa=(
+                    f"پردازندهٔ {cpu.title} از حافظهٔ {wanted} پشتیبانی نمی‌کند ({ram.title})."
+                ),
+                a_slug=a.slug,
+                b_slug=b.slug,
+                a_title=a.title,
+                b_title=b.title,
+            )
+        ]
+
+
 # --- Registry ----------------------------------------------------------------
 
 #: code -> rule instance. The DB row supplies severity/params/enabled; the
@@ -517,11 +947,19 @@ REGISTRY: dict[str, Rule] = {
     rule.code: rule
     for rule in (
         SocketMatchRule(),
+        ChipsetMatchRule(),
         RamTypeMatchRule(),
+        CpuMemorySupportRule(),
+        MemoryFitRule(),
         PsuWattageRule(),
         GpuClearanceRule(),
+        GpuInterfaceRule(),
+        CoolerFitRule(),
         CoolerSocketSupportRule(),
+        CoolerCapacityRule(),
+        StorageFitRule(),
         PsuConnectorRule(),
+        PsuFitRule(),
         PrebuiltFitRule(),
     )
 }

@@ -160,7 +160,10 @@ class TestCheckCompatibility:
         result = check_compatibility(["ryzen-7-7800x3d", "gigabyte-b760m-ds3h"])
         assert result.ok
         assert result.data["verdict"] == "block"
-        assert result.data["findings"][0]["rule_code"] == "SOCKET_MATCH"
+        # The socket mismatch is still reported; a chipset rule now reports the
+        # same pairing too, and findings are ordered by severity then code.
+        codes = {finding["rule_code"] for finding in result.data["findings"]}
+        assert "SOCKET_MATCH" in codes
 
     def test_a_valid_combination_is_ok(self, indexed):
         result = check_compatibility(

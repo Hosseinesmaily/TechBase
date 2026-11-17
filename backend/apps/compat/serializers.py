@@ -24,13 +24,24 @@ class CompatibilityRuleSerializer(serializers.ModelSerializer):
 
 
 class CompatibilityCheckRequestSerializer(serializers.Serializer):
-    """`POST /compat/check/` body: a list of entity slugs."""
+    """`POST /compat/check/` body: a list of entity slugs.
+
+    `candidates` is optional and is what the configurator uses to badge each card:
+    every candidate is evaluated against `parts` by the same deterministic engine.
+    """
 
     parts = serializers.ListField(
         child=serializers.SlugField(),
         allow_empty=False,
         max_length=20,
         help_text="Entity slugs to check, e.g. ['ryzen-7-7800x3d', 'b650-tomahawk'].",
+    )
+    candidates = serializers.ListField(
+        child=serializers.SlugField(),
+        allow_empty=True,
+        required=False,
+        max_length=40,
+        help_text="Optional: evaluate each of these slugs against `parts`.",
     )
 
 

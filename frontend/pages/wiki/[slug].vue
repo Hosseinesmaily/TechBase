@@ -181,6 +181,31 @@ function splitText(text: string): Segment[] {
           محتوای قدیمی
         </span>
       </div>
+
+      <!--
+        The article image. It is rendered at its own aspect ratio — never cropped
+        or stretched — and capped in height so a tall photo cannot push the
+        article text out of view. With no image the frame is a short, quiet note,
+        never a broken image and never a fabricated placeholder.
+      -->
+      <figure
+        v-if="page.hero_image"
+        class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-surface"
+      >
+        <img
+          :src="page.hero_image"
+          :alt="page.title"
+          class="mx-auto block h-auto max-h-[30rem] w-auto max-w-full object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+      <p
+        v-else
+        class="mt-4 rounded-xl border border-dashed border-slate-300 bg-surface px-4 py-6 text-center text-sm text-slate-500"
+      >
+        تصویری برای این مقاله ثبت نشده است.
+      </p>
     </header>
 
     <dl
@@ -301,7 +326,7 @@ function splitText(text: string): Segment[] {
           v-else-if="block.type === 'callout'"
           class="rounded-lg border p-4"
           :class="{
-            'border-sky-200 bg-sky-50': block.kind === 'info',
+            'border-brand-200 bg-brand-50': block.kind === 'info',
             'border-amber-200 bg-amber-50': block.kind === 'warning' || block.kind === 'tip',
             'border-rose-200 bg-rose-50': block.kind === 'danger',
           }"

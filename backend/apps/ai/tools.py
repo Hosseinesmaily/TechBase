@@ -50,9 +50,12 @@ class ToolResult:
     def facts(self) -> list[str]:
         """The values this result contributes to the fact list.
 
-        Every number in here is allowed to appear in the answer.
+        Every number in here is allowed to appear in the answer — including the
+        item count, which the tool itself returned.
         """
         values: list[str] = []
+        if "count" in self.data:
+            values.append(str(self.data["count"]))
         for item in self.data.get("items", []):
             if isinstance(item, dict):
                 for value in item.values():
@@ -65,6 +68,7 @@ def search_products(
     *,
     entity_type: str = "",
     brand: str = "",
+    query: str = "",
     min_price: int = 0,
     max_price: int = 0,
     in_stock: bool | None = None,
@@ -73,13 +77,15 @@ def search_products(
 ) -> ToolResult:
     """Find products in the catalog.
 
-    Filters: entity type, brand slug, a price range, and stock. The results
-    carry the price, the stock and the "last updated" date — the three things
-    the assistant must quote correctly.
+    Filters: entity type, brand slug, a text `query` (a model or a technology, e.g.
+    "DDR4" or "RTX 4070 SUPER"), a price range, and stock. The results carry the
+    price, the stock and the "last updated" date — the three things the assistant
+    must quote correctly.
     """
     arguments = {
         "entity_type": entity_type,
         "brand": brand,
+        "query": query,
         "min_price": min_price,
         "max_price": max_price,
         "in_stock": in_stock,
@@ -92,6 +98,14 @@ def search_products(
             products = products.filter(entity__type=entity_type)
         if brand:
             products = products.filter(entity__brand__slug=brand)
+        if query:
+            products = products.filter(
+                Q(title__icontains=query)
+                | Q(title_fa__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(entity__title__icontains=query)
+                | Q(entity__title_fa__icontains=query)
+            )
         if min_price:
             products = products.filter(price__gte=min_price)
         if max_price:
@@ -280,6 +294,10 @@ def tool_schemas() -> list[dict]:
                         "description": "cpu, gpu, ram, motherboard, psu, case, cooler, storage, prebuilt",
                     },
                     "brand": {"type": "string", "description": "the brand slug"},
+                    "query": {
+                        "type": "string",
+                        "description": "a model or technology to match, e.g. 'DDR4' or 'RTX 4070 SUPER'",
+                    },
                     "min_price": {"type": "integer", "description": "minimum price in tomans"},
                     "max_price": {"type": "integer", "description": "maximum price in tomans"},
                     "in_stock": {"type": "boolean", "description": "only available products"},

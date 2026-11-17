@@ -43,7 +43,7 @@ const query = computed(() => ({
   page_size: "24",
 }))
 
-const { data: products, pending, error } = await useFetch<Paginated<Product>>(
+const { data: products, pending, error, refresh } = await useFetch<Paginated<Product>>(
   "/api/v1/catalog/products/",
   {
     server: true,
@@ -132,9 +132,13 @@ const totalPages = computed(() => {
 
     <p v-if="pending" class="py-8 text-center text-sm text-slate-500">در حال بارگذاری…</p>
 
-    <div v-else-if="error" class="rounded-lg bg-rose-50 p-4 text-sm text-rose-700">
-      خطا در دریافت اطلاعات کاتالوگ. مطمئن شوید سرویس API در حال اجراست.
-    </div>
+    <ApiErrorNotice
+      v-else-if="error"
+      class="mb-4"
+      title="فهرست محصولات دریافت نشد"
+      message="ارتباط با سرور فروشگاه برقرار نشد. ممکن است سرویس موقتاً در دسترس نباشد؛ می‌توانید دوباره تلاش کنید."
+      @retry="refresh"
+    />
 
     <template v-else>
       <p class="mb-3 text-sm text-slate-500">

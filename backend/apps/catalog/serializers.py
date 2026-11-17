@@ -49,6 +49,10 @@ class ProductSerializer(serializers.ModelSerializer):
     entity_type = serializers.CharField(source="entity.type", read_only=True)
     entity_title_fa = serializers.CharField(source="entity.title_fa", read_only=True)
     price_updated_at = serializers.DateTimeField(read_only=True)
+    image_thumbnail = serializers.SerializerMethodField()
+    image_full = serializers.SerializerMethodField()
+    #: The published wiki article about this product's entity ("" when there is none).
+    wiki_slug = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -69,10 +73,25 @@ class ProductSerializer(serializers.ModelSerializer):
             "is_active",
             "warranty_months",
             "image_url",
+            "image_thumbnail",
+            "image_full",
+            "wiki_slug",
             "price_updated_at",
             "updated_at",
         )
         read_only_fields = fields
+
+    def get_wiki_slug(self, obj: Product) -> str:
+        """The article's own address, read from the entity binding — never guessed."""
+        return obj.entity.wiki_slug
+
+    def get_image_thumbnail(self, obj: Product) -> str:
+        """The card-sized rendition of the uploaded image ("" when there is none)."""
+        return obj.image_thumbnail_url
+
+    def get_image_full(self, obj: Product) -> str:
+        """The wider rendition used on a product's own page."""
+        return obj.image_full_url
 
 
 class EntityListSerializer(serializers.ModelSerializer):
@@ -85,6 +104,8 @@ class EntityListSerializer(serializers.ModelSerializer):
     )
     price_min = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
+    #: The published wiki article about this entity ("" when there is none).
+    wiki_slug = serializers.SerializerMethodField()
 
     class Meta:
         model = Entity
@@ -103,8 +124,12 @@ class EntityListSerializer(serializers.ModelSerializer):
             "category_slug",
             "price_min",
             "in_stock",
+            "wiki_slug",
         )
         read_only_fields = fields
+
+    def get_wiki_slug(self, obj: Entity) -> str:
+        return obj.wiki_slug
 
     def get_in_stock(self, obj: Entity) -> bool:
         return any(p.in_stock for p in obj.products.all() if p.is_active)
@@ -144,6 +169,7 @@ class EntityDetailSerializer(EntityListSerializer):
             "category_slug",
             "price_min",
             "in_stock",
+            "wiki_slug",
             "spec",
             "products",
             "aliases",

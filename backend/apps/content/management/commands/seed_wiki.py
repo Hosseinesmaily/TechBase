@@ -1,23 +1,27 @@
-"""Seed realistic wiki content.
+"""Seed demo wiki content (32 pages).
 
-~15 pages of genuine Persian technical writing about the seeded catalog: what
-the parts are, why they matter, and how they fit together. The content is
-written to be *linked* — each page mentions other entities by name so the
-auto-linker has something to work with.
+**Development content, not a verified store publication.** These pages exist to
+exercise the product end to end: they describe the seeded catalog (what the parts
+are, why they matter, how they fit together), each one mentions other entities by
+name so the auto-linker has real material to work with, and they deliberately
+carry no price or stock claim — those numbers live in the catalog and are read
+from there. Treat them as sample writing for development and testing, to be
+replaced by the editorial team.
 
 Idempotent: pages are matched by slug and updated in place.
 """
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 from typing import Any, cast
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 from wagtail.models import Page
 
-from apps.catalog.models import Entity, Product
+from apps.catalog.models import Entity, EntityStatus, EntityType, Product
 from apps.linking.services import link_page
 
 from ...models import WikiPage
@@ -418,6 +422,10 @@ PAGES: list[dict] = [
                 "EXPO پروفایلی برای بارگذاری تنظیمات فرکانس و زمان‌بندی حافظه در BIOS است. فعال‌کردن آن می‌تواند حافظه را بالاتر از تنظیم پایهٔ JEDEC اجرا کند و از نظر فنی نوعی اورکلاک حافظه محسوب می‌شود؛ پایداری به CPU، مادربرد، BIOS و کیت بستگی دارد. برای نمونه، Corsair Vengeance RGB 32GB DDR5-6000 را با فهرست پشتیبانی ASUS و پردازندهٔ خود تطبیق دهید.",
             ),
             (
+                "paragraph",
+                "برای سیستم‌های اقتصادی، کیت Corsair Vengeance RGB 16GB (2x8GB) DDR5-6000 گزینهٔ به‌صرفه‌ای است؛ ظرفیت لازم را با کاربرد واقعی خود بسنجید، نه فقط با عدد بزرگ‌تر.",
+            ),
+            (
                 "callout",
                 "warning",
                 "توجه",
@@ -472,6 +480,10 @@ PAGES: list[dict] = [
             (
                 "paragraph",
                 "دو منبع ۶۵۰ واتی با کیفیت ساخت متفاوت، تجربهٔ کاملاً متفاوتی می‌دهند. گواهی 80+ Gold و گارانتی بلندمدت نشانهٔ کیفیت است.",
+            ),
+            (
+                "paragraph",
+                "ظرفیت را با مصرف واقعی خود بسنجید: برای سیستم‌های اداری و کم‌مصرف، منبعی مانند Corsair RM450 450W 80+ Gold کافی است، در حالی که یک سیستم گیمینگ سنگین با کارت گرافیک رده‌بالا به منبعی با توان بیشتر نیاز دارد.",
             ),
             (
                 "callout",
@@ -534,6 +546,7 @@ PAGES: list[dict] = [
             "tb-sku-phantom-1440",
             "tb-sku-valor-1440",
             "tb-sku-legend-1440",
+            "tb-sku-horizon-1440",
         ],
         "body": [
             ("heading", "h2", "مشخصات لازم برای 1440p"),
@@ -657,6 +670,424 @@ PAGES: list[dict] = [
             ),
         ],
     },
+    {
+        "slug": "ryzen-9-7950x",
+        "title": "ایامدی رایزن ۹ ۷۹۵۰X",
+        "summary": "پردازندهٔ ۱۶ هستهای AM5 برای کارهای سنگین رندر، کدگذاری و تولید محتوا.",
+        "entity": "ryzen-9-7950x",
+        "type": "component",
+        "review_days": 90,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "رایزن ۹ ۷۹۵۰X با ۱۶ هسته و ۳۲ رشته در کارهایی که همهٔ هستهها را درگیر میکنند — رندر ویدیو، خروجی گرفتن از پروژههای سهبعدی، بیلد پروژههای بزرگ — زمان پردازش را کوتاه میکند. در بازی، تفاوت آن با مدلهای سری X3D معمولاً کمتر از تفاوت قیمتشان است.",
+            ),
+            ("heading", "h2", "مشخصات کلیدی"),
+            (
+                "spec_table",
+                "",
+                [
+                    ("سوکت", "AM5"),
+                    ("هسته / رشته", "۱۶ / ۳۲"),
+                    ("توان طراحی پیشفرض (TDP)", "۱۷۰ وات"),
+                    ("نوع حافظه", "DDR5"),
+                ],
+            ),
+            ("heading", "h3", "سازگاری"),
+            (
+                "paragraph",
+                "این پردازنده روی سوکت AM5 مینشیند، پس مادربردهایی مانند MSI MAG B650 Tomahawk با آن کار میکنند. TDP بالاتر از مدلهای میانرده بهمعنی نیاز به خنککنندهٔ قویتر و جریان هوای مناسب در کیس است؛ منبع تغذیه هم باید مصرف لحظهای بالا را تحمل کند.",
+            ),
+            (
+                "callout",
+                "warning",
+                "نکتهٔ خنککنندگی",
+                "برای این مدل یک خنککنندهٔ ردهبالا یا خنککنندهٔ آبی بسته انتخاب کنید؛ خنککنندهٔ ضعیف در بار طولانی باعث افت فرکانس میشود.",
+            ),
+        ],
+    },
+    {
+        "slug": "core-i5-13400f",
+        "title": "اینتل کور i5-13400F",
+        "summary": "پردازندهٔ ۱۰ هستهای سوکت LGA1700 — گزینهٔ اقتصادی برای سیستم گیمینگ میانرده.",
+        "entity": "core-i5-13400f",
+        "type": "component",
+        "review_days": 90,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "کور i5-13400F یک پردازندهٔ ۱۰ هستهای (۶ هستهٔ عملکردی و ۴ هستهٔ کممصرف) برای سوکت LGA1700 است. پسوند F یعنی گرافیک مجتمع ندارد و برای نمایش تصویر به کارت گرافیک جداگانه نیاز دارد.",
+            ),
+            ("heading", "h2", "مشخصات کلیدی"),
+            (
+                "spec_table",
+                "",
+                [
+                    ("سوکت", "LGA1700"),
+                    ("هسته / رشته", "۱۰ / ۱۶"),
+                    ("توان طراحی پیشفرض (TDP)", "۶۵ وات"),
+                    ("گرافیک مجتمع", "ندارد (پسوند F)"),
+                ],
+            ),
+            ("heading", "h3", "سازگاری"),
+            (
+                "paragraph",
+                "مادربردهایی مانند Gigabyte B760M DS3H با این سوکت جفت میشوند. این مادربرد از حافظهٔ DDR4 استفاده میکند و با سوکت AM5 یا حافظهٔ DDR5 سازگار نیست؛ ترکیب پردازندهٔ اینتل با مادربرد AM5 در موتور سازگاری با پیام «ناسازگاری سوکت» گزارش میشود.",
+            ),
+        ],
+    },
+    {
+        "slug": "core-i7-14700k",
+        "title": "اینتل کور i7-14700K",
+        "summary": "پردازندهٔ ۲۰ هستهای LGA1700 برای گیمینگ قوی و کارهای چندرشتهای.",
+        "entity": "core-i7-14700k",
+        "type": "component",
+        "review_days": 90,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "کور i7-14700K با ۲۰ هسته (۸ عملکردی و ۱۲ کممصرف) برای کسی است که هم بازی میکند و هم کارهای چندرشتهای انجام میدهد. پسوند K یعنی ضریب قفل نیست و امکان تنظیم دستی فرکانس وجود دارد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("سوکت", "LGA1700"),
+                    ("هسته / رشته", "۲۰ / ۲۸"),
+                    ("توان طراحی پیشفرض (TDP)", "۱۲۵ وات"),
+                    ("نکتهٔ تغذیه", "مصرف لحظهای در حالت توربو بالاتر است"),
+                ],
+            ),
+            (
+                "paragraph",
+                "مصرف لحظهای این مدل بالا میرود؛ منبع تغذیهٔ ۷۵۰ وات به بالا و خنککنندهٔ قوی توصیه میشود. اگر هدف فقط بازی است، مدلهای سری X3D رقابت نزدیکی دارند و انتخاب بین آنها به قیمت روز و بقیهٔ قطعات بستگی دارد.",
+            ),
+        ],
+    },
+    {
+        "slug": "rtx-4080-super",
+        "title": "انویدیا جیفورس RTX 4080 SUPER",
+        "summary": "کارت گرافیک ردهبالا با ۱۶ گیگابایت حافظه برای 1440p و 4K.",
+        "entity": "rtx-4080-super",
+        "type": "component",
+        "review_days": 60,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "RTX 4080 SUPER برای بازی در 1440p با تنظیمات بالا و 4K با تنظیمات متوسط تا بالا ساخته شده است. حافظهٔ ۱۶ گیگابایتی آن در بازیهای سنگین و بافتهای پرحجم سرفصل بهتری نسبت به مدلهای ۸ و ۱۲ گیگابایتی دارد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("حافظه", "۱۶ گیگابایت GDDR6X"),
+                    ("توان مصرفی", "۳۲۰ وات"),
+                    ("منبع تغذیهٔ پیشنهادی", "۷۵۰ وات"),
+                    ("طول کارت", "بلند؛ اندازهٔ دقیق به مدل سازنده بستگی دارد"),
+                ],
+            ),
+            (
+                "paragraph",
+                "پیش از خرید، طول کارت را با فضای داخلی کیس مقایسه کنید؛ کارتهای این رده معمولاً چند اتصال برق یا آداپتور مخصوص دارند. فریم اندازهگیریشدهٔ هر بازی، در همان رزولوشن، در جدول بنچمارک سایت ثبت شده است.",
+            ),
+            (
+                "callout",
+                "info",
+                "معیار انتخاب",
+                "اگر مانیتور شما 1080p است این کارت بیش از نیاز شماست؛ بودجهٔ آزادشده را میتوانید روی حافظه یا خنککنندهٔ بهتر بگذارید.",
+            ),
+        ],
+    },
+    {
+        "slug": "wd-blue-sn580-1tb",
+        "title": "حافظهٔ SSD وسترن دیجیتال Blue SN580",
+        "summary": "اساسدی NVMe با رابط PCIe 4.0 — گزینهٔ متعادل برای سیستمعامل و بازیها.",
+        "entity": "wd-blue-sn580-1tb",
+        "type": "component",
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "SN580 یک اساسدی NVMe با رابط PCIe 4.0 است و برای استفادهٔ روزمره و نصب بازیها انتخاب مناسبی است. سرعت خواندن متوالی آن در ردهٔ میانردهٔ PCIe 4.0 قرار میگیرد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("ظرفیت", "۱ ترابایت"),
+                    ("رابط", "M.2 NVMe PCIe 4.0"),
+                    ("بررسی لازم پیش از خرید", "پشتیبانی اسلات M.2 مادربرد از PCIe 4.0"),
+                ],
+            ),
+            (
+                "paragraph",
+                "برای کپی فایلهای بسیار بزرگ و کارهای حرفهای تولید محتوا، مدلهایی مانند Samsung 990 Pro سرعت بالاتری دارند؛ برای نصب ویندوز، بازی و برنامههای روزمره تفاوت عملی معمولاً کم است.",
+            ),
+        ],
+    },
+    {
+        "slug": "nzxt-kraken-360",
+        "title": "خنککنندهٔ آبی NZXT Kraken 360",
+        "summary": "خنککنندهٔ آبی بستهٔ سهفن با رادیاتور ۳۶۰ میلیمتری برای پردازندههای پرمصرف.",
+        "entity": "nzxt-kraken-360",
+        "type": "component",
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "رادیاتور ۳۶۰ میلیمتری این خنککننده برای پردازندههای ۸ هستهای و بالاتر در بار طولانی مناسب است؛ آب گرم را از روی پردازنده برمیدارد و در سه فن پخش میکند.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("اندازهٔ رادیاتور", "۳۶۰ میلیمتر (سه فن ۱۲۰)"),
+                    ("پشتیبانی سوکت", "AM5 و LGA1700 با براکت همراه"),
+                    ("بررسی پیش از خرید", "فضای نصب رادیاتور در سقف یا جلوی کیس"),
+                ],
+            ),
+            (
+                "paragraph",
+                "کیسهای میانرده مانند NZXT H5 Flow از رادیاتور ۳۶۰ در جلو پشتیبانی میکنند، اما باید محل نصب و مسیر کابلها پیش از خرید بررسی شود. اگر بودجه محدود است، Cooler Master Hyper 212 برای پردازندههای کممصرف کافی است.",
+            ),
+        ],
+    },
+    {
+        "slug": "corsair-rm850x",
+        "title": "منبع تغذیهٔ کورسیر RM850x",
+        "summary": "منبع تغذیهٔ ۸۵۰ وات 80Plus Gold برای سیستمهای ردهبالا.",
+        "entity": "corsair-rm850x",
+        "type": "component",
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "RM850x یک منبع تغذیهٔ ۸۵۰ واتی با گواهی 80Plus Gold است؛ کارایی بالاتر یعنی گرمای کمتر و صدای کمتر در بار سنگین. توان ۸۵۰ وات برای کارتهای گرافیک ردهبالا و پردازندههای پرمصرف حاشیهٔ اطمینان میدهد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("توان", "۸۵۰ وات"),
+                    ("گواهی کارایی", "80Plus Gold"),
+                    ("نوع کابل", "ماژولار"),
+                ],
+            ),
+            (
+                "paragraph",
+                "توان اشتباه انتخابشده یکی از دلایل رایج خاموششدن ناگهانی زیر بار است. اگر مجموع مصرف کارت گرافیک و پردازنده به سقف توان نزدیک میشود، یک پله بالاتر انتخاب کنید.",
+            ),
+        ],
+    },
+    {
+        "slug": "lian-li-lancool-216",
+        "title": "کیس Lian Li Lancool 216",
+        "summary": "کیس میانردهٔ جادار با دو فن بزرگ جلو و جریان هوای مناسب برای کارتهای بلند.",
+        "entity": "lian-li-lancool-216",
+        "type": "component",
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "Lancool 216 با دو فن بزرگ در جلو، جریان هوای خوبی برای کارت گرافیک و پردازنده فراهم میکند و برای کارتهای بلند و رادیاتورهای ۳۶۰ فضای کافی دارد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("فرمفاکتور مادربرد", "ATX و میکرو-ATX"),
+                    ("فنهای همراه", "دو فن بزرگ جلو"),
+                    ("بررسی پیش از خرید", "طول کارت گرافیک و محل رادیاتور"),
+                ],
+            ),
+            (
+                "paragraph",
+                "این کیس برای سیستمهایی مناسب است که هم کارت گرافیک بلند دارند و هم خنککنندهٔ آبی؛ در مقابل، کیسهای کوچکتر برای سیستمهای اداری جمعوجمعتر انتخاب بهتری هستند.",
+            ),
+        ],
+    },
+    {
+        "slug": "msi-mag-b650-tomahawk",
+        "title": "مادربرد MSI MAG B650 Tomahawk",
+        "summary": "مادربرد AM5 با حافظهٔ DDR5 و مدار تغذیهٔ مناسب برای پردازندههای رایزن ۷۰۰۰.",
+        "entity": "msi-mag-b650-tomahawk",
+        "type": "component",
+        "review_days": 90,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "تراشهٔ B650 نقطهٔ تعادل قیمت و امکانات برای پردازندههای AM5 است. Tomahawk مدار تغذیهٔ قویتری از مدلهای ارزان دارد و برای پردازندههای ۸ تا ۱۲ هستهای انتخاب مطمئنی است.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("سوکت", "AM5"),
+                    ("نوع حافظه", "DDR5"),
+                    ("اسلات M.2", "چند اسلات، شامل PCIe 4.0"),
+                ],
+            ),
+            (
+                "paragraph",
+                "نوع حافظه را همیشه با پردازنده و کیت انتخابشده هماهنگ کنید: این مادربرد فقط DDR5 میپذیرد و ماژول DDR4 در آن جا نمیگیرد.",
+            ),
+        ],
+    },
+    {
+        "slug": "kingston-fury-beast-32gb-ddr4-3200",
+        "title": "حافظهٔ کینگستون Fury Beast، ظرفیت ۳۲ گیگابایت DDR4-3200",
+        "summary": "کیت حافظهٔ DDR4 با فرکانس ۳۲۰۰ برای سیستمهای مبتنی بر سوکت LGA1700 و AM4.",
+        "entity": "kingston-fury-beast-32gb-ddr4-3200",
+        "type": "component",
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "معرفی"),
+            (
+                "paragraph",
+                "این کیت ۳۲ گیگابایتی DDR4 با فرکانس ۳۲۰۰ مگاهرتز برای سیستمهایی است که مادربردشان DDR4 میپذیرد. ظرفیت ۳۲ گیگابایت برای بازی، چند برنامهٔ همزمان و کارهای اداری سنگین حاشیهٔ خوبی میدهد.",
+            ),
+            (
+                "spec_table",
+                "",
+                [
+                    ("نوع حافظه", "DDR4"),
+                    ("فرکانس", "۳۲۰۰ مگاهرتز"),
+                    ("ظرفیت", "۳۲ گیگابایت"),
+                ],
+            ),
+            (
+                "callout",
+                "danger",
+                "ناسازگاری رایج",
+                "این ماژول در اسلات DDR5 جا نمیگیرد. اگر مادربرد شما مانند MSI MAG B650 Tomahawk فقط DDR5 میپذیرد، این حافظه با آن سازگار نیست و موتور سازگاری هم همین را گزارش میکند.",
+            ),
+        ],
+    },
+    {
+        "slug": "tb-prebuilt-apex-4k",
+        "title": "تکبیس اپکس ۴K",
+        "summary": "سیستم آمادهٔ گیمینگ 4K با کارت گرافیک ردهبالا و پردازندهٔ ۱۶ هستهای.",
+        "entity": "tb-prebuilt-apex-4k",
+        "type": "component",
+        "review_days": 30,
+        "body": [
+            ("heading", "h2", "این سیستم برای چه کسی است؟"),
+            (
+                "paragraph",
+                "اپکس ۴K برای بازی در رزولوشن 4K و کارهای تولید محتوای سنگین ساخته شده است؛ ترکیب کارت گرافیک ردهبالا و پردازندهٔ ۱۶ هستهای، هم بازی و هم رندر را پوشش میدهد. قیمت آن بالاتر از سایر مدلهای تکبیس است.",
+            ),
+            ("heading", "h2", "ترکیب قطعات"),
+            (
+                "spec_table",
+                "",
+                [
+                    ("پردازنده", "AMD Ryzen 9 7950X"),
+                    ("کارت گرافیک", "NVIDIA GeForce RTX 4080 SUPER"),
+                    ("منبع تغذیه", "۸۵۰ وات"),
+                ],
+            ),
+            (
+                "paragraph",
+                "مجموع مصرف این ترکیب بالا است؛ اگر بعداً کارت گرافیک قویتری اضافه کنید، توان منبع تغذیه را دوباره بررسی کنید. قیمت و موجودی روز، در کارت محصول همین صفحه نمایش داده میشود.",
+            ),
+        ],
+    },
+    {
+        "slug": "ddr5-vs-ddr4",
+        "title": "تفاوت DDR4 و DDR5 در عمل چیست؟",
+        "summary": "نسلهای حافظه علاوه بر سرعت، در سوکت، ولتاژ و شکل اسلات هم تفاوت دارند.",
+        "type": "concept",
+        "review_days": 180,
+        "body": [
+            ("heading", "h2", "چه تفاوتی دارند؟"),
+            (
+                "paragraph",
+                "DDR5 نسل جدیدتر حافظه است و پهنای باند بیشتری نسبت به DDR4 دارد. تفاوت مهمتر برای خریدار این است که DDR4 و DDR5 در یک اسلات جا نمیگیرند: نوع حافظه را مادربرد تعیین میکند.",
+            ),
+            (
+                "list",
+                "ul",
+                [
+                    "سوکت AM5 (پردازندههای رایزن ۷۰۰۰) فقط DDR5 میپذیرد.",
+                    "مادربردهای LGA1700 بسته به مدل، DDR4 یا DDR5 دارند — نه هر دو.",
+                    "خرید کیت DDR4 برای مادربرد DDR5 یک خطای رایج است و در موتور سازگاری گزارش میشود.",
+                ],
+            ),
+            ("heading", "h2", "از کجا بفهمم کدام را دارم؟"),
+            (
+                "paragraph",
+                "به مدل دقیق مادربرد نگاه کنید. اگر مادربردی مانند Gigabyte B760M DS3H دارید، مسیر DDR4 درست است و کیت کینگستون فوری بیست ۳۲ گیگابایت DDR4-3200 روی آن کار میکند؛ برای MSI MAG B650 Tomahawk باید کیتی مانند Corsair Vengeance DDR5 انتخاب کنید.",
+            ),
+        ],
+    },
+    {
+        "slug": "airflow-and-cooling",
+        "title": "جریان هوا در کیس و انتخاب خنککننده",
+        "summary": "چرا ترتیب فنها و مسیر هوا روی دمای پردازنده و کارت گرافیک اثر میگذارد.",
+        "type": "concept",
+        "review_days": 180,
+        "body": [
+            ("heading", "h2", "چرا جریان هوا مهم است؟"),
+            (
+                "paragraph",
+                "هوای گرم باید از کیس بیرون برود تا هوای خنک جای آن را بگیرد. اگر فنها در جهت مخالف هم بچرخند یا جلوی کیس بسته باشد، گرما داخل میماند و پردازنده و کارت گرافیک سریعتر به سقف دمای کاری میرسند.",
+            ),
+            (
+                "list",
+                "ul",
+                [
+                    "فنهای جلو معمولاً هوا را به داخل میبرند و فن پشت آن را بیرون میدهد.",
+                    "رادیاتور خنککنندهٔ آبی را در جایی نصب کنید که هوای تازه دریافت کند.",
+                    "گردوغبار روی پرهها پس از چند ماه جریان هوا را کم میکند؛ تمیزکاری دورهای ارزانترین بهبود دمایی است.",
+                ],
+            ),
+            ("heading", "h2", "خنککنندهٔ بادی یا آبی؟"),
+            (
+                "paragraph",
+                "برای پردازندههای کممصرف، خنککنندهای مانند Cooler Master Hyper 212 کافی است. برای پردازندههای ۸ هستهای و بالاتر با مصرف بالا، خنککنندهٔ آبی مانند NZXT Kraken 360 دمای پایینتری در بار طولانی نگه میدارد؛ بهشرطی که کیس جای رادیاتور را داشته باشد.",
+            ),
+        ],
+    },
+    {
+        "slug": "best-office-pc-build",
+        "title": "راهنمای خرید سیستم اداری",
+        "summary": "برای کار اداری و مرور وب، پردازندهٔ کممصرف و حافظهٔ ۱۶ گیگابایت کافی و بهصرفه است.",
+        "type": "guide",
+        "use_case": "office",
+        "resolution": "",
+        "budget_max": "40000000",
+        "products": ["tb-sku-nomad-office"],
+        "review_days": 120,
+        "body": [
+            ("heading", "h2", "نیاز یک سیستم اداری چیست؟"),
+            (
+                "paragraph",
+                "بازهٔ اداری معمولاً یعنی چند پنجرهٔ مرورگر، نرمافزارهای دفتری و برنامههای حسابداری. در این حالت کارت گرافیک جداگانه لازم نیست و پردازندهٔ میانرده با ۱۶ گیگابایت حافظه کافی است.",
+            ),
+            (
+                "list",
+                "ul",
+                [
+                    "حافظه: ۱۶ گیگابایت برای کار روزمره و چند برنامهٔ همزمان.",
+                    "ذخیرهسازی: اساسدی بهجای هارد مکانیکی، برای بالا آمدن سریع سیستم.",
+                    "خنککننده: خنککنندهٔ بادی معمولی برای پردازندهٔ کممصرف کافی است.",
+                ],
+            ),
+            (
+                "paragraph",
+                "اگر بعداً بازی یا کار گرافیکی اضافه شد، افزودن کارت گرافیک به همین سیستم ممکن است؛ در آن صورت توان منبع تغذیه را بررسی کنید. سیستمهای آمادهٔ تکبیس با کاربرد اداری در فهرست محصولات دستهبندی شدهاند.",
+            ),
+        ],
+    },
 ]
 
 
@@ -691,6 +1122,15 @@ class Command(BaseCommand):
                 f"Seeded {len(PAGES)} wiki pages ({created} new, {updated} updated)."
             )
         )
+
+        auto_created, auto_skipped = self._seed_auto_pages(root)
+        if auto_created or auto_skipped:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Generated {auto_created} spec-derived pages for parts without a "
+                    f"written page ({auto_skipped} skipped: no specs)."
+                )
+            )
 
         if options.get("relink", True):
             self._relink()
@@ -766,11 +1206,21 @@ class Command(BaseCommand):
         )
         page.summary = spec["summary"]
         page.entity = entity
-        page.review_by = date.today() + timedelta(days=spec.get("review_days", 90))
+        page.review_by = timezone.localdate() + timedelta(days=spec.get("review_days", 90))
         page.tags = spec.get("tags", [])
         # The body and the guide fields live on the concrete page type.
         concrete = cast("Any", page)
-        concrete.body = self._build_body(spec.get("body", []))
+        body_blocks = list(spec.get("body", []))
+        if spec["type"] == "guide":
+            # Naming the recommended systems in the body is what makes them
+            # *linked*: the auto-linker only sees text. Without this the guide
+            # listed SKUs the reader could not click, and the systems stayed
+            # orphan pages.
+            recommended = list(Product.objects.filter(sku__in=spec.get("products", [])))
+            if recommended:
+                body_blocks.append(("heading", "h2", "سیستم‌های پیشنهادی این راهنما"))
+                body_blocks.append(("list", "ul", [item.display_title for item in recommended]))
+        concrete.body = self._build_body(body_blocks)
 
         # Every field must be set *before* the revision is published, or the
         # published revision keeps the old (empty) values.
@@ -793,6 +1243,110 @@ class Command(BaseCommand):
             page.save_revision().publish()
 
         return page
+
+    def _seed_auto_pages(self, root: Page) -> tuple[int, int]:
+        """Give every published hardware part a page, built from its own specs.
+
+        A hand-written `PAGES` entry always wins. A part without one gets a page
+        whose body is *only* its catalog data (its own summary plus a spec table)
+        — nothing is invented, and no product is left without a wiki article, so
+        the product ↔ page link is complete for every part.
+        """
+        covered = {spec["entity"] for spec in PAGES if spec.get("entity")}
+        types = [
+            EntityType.CPU,
+            EntityType.MOTHERBOARD,
+            EntityType.RAM,
+            EntityType.GPU,
+            EntityType.PSU,
+            EntityType.CASE,
+            EntityType.COOLER,
+            EntityType.STORAGE,
+            EntityType.PREBUILT,
+        ]
+        created = 0
+        skipped = 0
+        queryset = (
+            Entity.objects.filter(status=EntityStatus.PUBLISHED, type__in=types)
+            .exclude(slug__in=covered)
+            .order_by("type", "slug")
+        )
+        for entity in queryset:
+            rows = self._spec_rows(entity)
+            if not rows:
+                # No specs at all means an empty page: report it, never invent it.
+                skipped += 1
+                self.stderr.write(
+                    self.style.WARNING(f"no specs to build a page for {entity.slug!r}")
+                )
+                continue
+            if self._upsert_page(root, self._auto_spec(entity, rows)) is not None:
+                created += 1
+        return created, skipped
+
+    def _auto_spec(self, entity: Entity, rows: list[tuple[str, str]]) -> dict:
+        summary = entity.summary_fa or entity.summary or entity.title
+        body: list[tuple] = [
+            ("paragraph", summary),
+            ("heading", "h2", "مشخصات کلیدی"),
+            ("spec_table", "", rows),
+        ]
+        if entity.type == EntityType.PREBUILT:
+            parts = self._prebuilt_part_names(entity)
+            if parts:
+                # Naming the parts is what links them: the auto-linker reads text.
+                body.append(("heading", "h2", "قطعات این سیستم"))
+                body.append(("list", "ul", parts))
+        body.append(
+            (
+                "callout",
+                "info",
+                "منبع این صفحه",
+                "این صفحه از دادهٔ کاتالوگ همین قطعه ساخته شده است و ادعای "
+                "اضافه‌ای ندارد؛ متن تحریریه پس از بازبینی جایگزین می‌شود.",
+            )
+        )
+        return {
+            "slug": entity.slug,
+            "title": entity.title,
+            "summary": summary,
+            "entity": entity.slug,
+            "type": "component",
+            "review_days": 90,
+            "body": body,
+        }
+
+    def _prebuilt_part_names(self, entity: Entity) -> list[str]:
+        """The names of the parts a prebuilt ships with, for its page body."""
+        spec = getattr(entity, "spec", None)
+        slugs = (spec.common or {}).get("components") if spec else None
+        if not slugs:
+            return []
+        by_slug = {item.slug: item for item in Entity.objects.filter(slug__in=slugs)}
+        return [by_slug[slug].title for slug in slugs if slug in by_slug]
+
+    def _spec_rows(self, entity: Entity) -> list[tuple[str, str]]:
+        """(label, value) rows for the entity's own specs, in Persian."""
+        from apps.linking.api import SPEC_LABELS
+
+        spec = getattr(entity, "spec", None)
+        if spec is None:
+            return []
+        merged = {**(spec.common or {}), **(spec.extra or {})}
+        rows: list[tuple[str, str]] = []
+        for key, value in merged.items():
+            if key.endswith("_fa") or key in {"components", "useful_links"}:
+                continue
+            label = SPEC_LABELS.get(key, key.replace("_", " "))
+            rows.append((label, self._format_spec(value)))
+        return rows
+
+    def _format_spec(self, value: Any) -> str:
+        if isinstance(value, bool):
+            return "بله" if value else "خیر"
+        if isinstance(value, (list, tuple)):
+            return "، ".join(str(item) for item in value)
+        return str(value)
 
     def _build_body(self, blocks: list[tuple]) -> Any:
         """Turn the compact tuple format into StreamField child blocks."""

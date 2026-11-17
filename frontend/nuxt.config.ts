@@ -36,6 +36,14 @@ export default defineNuxtConfig({
       siteName: "تک‌بیس",
       // Used for canonical URLs, the sitemap and robots.txt.
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "http://localhost:3000",
+      // Where the Django/Wagtail admin is published. `/adminpanel` redirects to
+      // the real admin login on this origin; the admin landing page links to it.
+      // Set it to `same-origin` when a reverse proxy publishes the admin on the
+      // site's own domain (the redirect then stays relative, e.g. /admin/login/).
+      adminBaseUrl:
+        process.env.NUXT_ADMIN_BASE_URL === "same-origin"
+          ? ""
+          : process.env.NUXT_ADMIN_BASE_URL || "http://localhost:8000",
     },
   },
 

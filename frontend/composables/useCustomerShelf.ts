@@ -133,6 +133,16 @@ export function useCustomerShelf() {
     persist()
   }
 
+  function removeSearch(query: string) {
+    recentSearches.value = recentSearches.value.filter((item) => item !== query)
+    persist()
+  }
+
+  function clearSearches() {
+    recentSearches.value = []
+    persist()
+  }
+
   return {
     favorites,
     builds,
@@ -148,5 +158,7 @@ export function useCustomerShelf() {
     saveBuild,
     removeBuild,
     saveSearch,
+    removeSearch,
+    clearSearches,
   }
 }

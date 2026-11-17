@@ -12,6 +12,7 @@ from django.core.management import call_command
 
 from apps.benchmarks.models import Benchmark
 from apps.catalog.models import ComponentSpec, Entity, EntityType, Product
+from apps.compat.engine import REGISTRY
 from apps.compat.models import CompatibilityRule
 from apps.compat.services import check_parts
 
@@ -28,7 +29,13 @@ class TestSeedCreatesData:
     def test_creates_brands_categories_entities_products(self, seeded):
         assert Entity.objects.count() > 20
         assert Product.objects.count() > 20
-        assert CompatibilityRule.objects.count() == 7
+        # Every rule the engine can run must have a seeded, enabled row: a rule
+        # without one is silently inactive, which is exactly how a "gap" hides.
+        seeded_codes = set(
+            CompatibilityRule.objects.filter(enabled=True).values_list("code", flat=True)
+        )
+        assert set(REGISTRY) <= seeded_codes, sorted(set(REGISTRY) - seeded_codes)
+        assert CompatibilityRule.objects.count() >= 15
         assert Benchmark.objects.count() > 20
 
     def test_creates_ten_prebuilt_pcs(self, seeded):

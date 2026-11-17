@@ -59,6 +59,9 @@ export interface WikiPage {
   language: string
   entity: WikiEntityRef | null
   last_updated: string | null
+  /** The article image, when the editor uploaded one ("" otherwise). */
+  hero_image?: string
+  hero_thumbnail?: string
   body?: WikiBlock[]
   links?: WikiLink[]
   use_case?: string

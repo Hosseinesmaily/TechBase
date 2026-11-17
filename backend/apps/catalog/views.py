@@ -22,6 +22,18 @@ from .serializers import (
 )
 
 
+def _prefetch_wiki(path: str) -> Prefetch:
+    """Prefetch the *published* wiki article of each entity, so `wiki_slug` is free.
+
+    The import is local on purpose: the `content` app depends on `catalog` (its
+    page holds the entity FK), so a module-level import here would close the cycle.
+    """
+    from apps.content.models import WikiPage
+
+    published = WikiPage.objects.live().filter(first_published_at__isnull=False)
+    return Prefetch(path, queryset=published)
+
+
 class BrandListView(generics.ListAPIView):
     """Facet source: all brands that have at least one active entity."""
 
@@ -86,7 +98,7 @@ class EntityListView(generics.ListAPIView):
         if params.get("in_stock") in {"1", "true", "yes"}:
             qs = qs.filter(products__stock__gt=0, products__is_active=True)
 
-        return qs.distinct().order_by("title")
+        return qs.distinct().prefetch_related(_prefetch_wiki("wiki_pages")).order_by("title")
 
 
 class EntityDetailView(generics.RetrieveAPIView):
@@ -99,7 +111,10 @@ class EntityDetailView(generics.RetrieveAPIView):
         return (
             Entity.objects.filter(is_active=True)
             .select_related("brand", "category", "spec")
-            .prefetch_related(Prefetch("products", queryset=Product.objects.filter(is_active=True)))
+            .prefetch_related(
+                Prefetch("products", queryset=Product.objects.filter(is_active=True)),
+                _prefetch_wiki("wiki_pages"),
+            )
         )
 
 
@@ -151,7 +166,7 @@ class ProductListView(generics.ListAPIView):
                 | Q(entity__title_fa__icontains=query)
             )
 
-        return qs.order_by("price")
+        return qs.prefetch_related(_prefetch_wiki("entity__wiki_pages")).order_by("price")
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -162,7 +177,11 @@ class ProductDetailView(generics.RetrieveAPIView):
     lookup_url_kwarg = "sku"
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).select_related("entity", "entity__brand")
+        return (
+            Product.objects.filter(is_active=True)
+            .select_related("entity", "entity__brand")
+            .prefetch_related(_prefetch_wiki("entity__wiki_pages"))
+        )
 
 
 class EntityBySlugView(APIView):

@@ -44,6 +44,16 @@ class WikiPage(Page):
         help_text="اگر این صفحه دربارهٔ یک قطعه است، موجودیت مرتبط را انتخاب کنید.",
     )
     summary = models.TextField(blank=True, help_text="خلاصهٔ یک تا دو جمله‌ای.")
+    #: The article's main image. Optional — a page without one renders the default
+    #: look rather than a broken frame.
+    hero_image = models.ForeignKey(
+        "wagtailimages.Image",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="تصویر اصلی مقاله (اختیاری)؛ در صفحهٔ مقاله نمایش داده میشود.",
+    )
     review_by = models.DateField(
         null=True,
         blank=True,
@@ -57,6 +67,7 @@ class WikiPage(Page):
         *Page.content_panels,
         FieldPanel("entity"),
         FieldPanel("summary"),
+        FieldPanel("hero_image"),
         FieldPanel("review_by"),
         FieldPanel("tags"),
     ]
@@ -69,13 +80,33 @@ class WikiPage(Page):
         return self.title
 
     @property
+    def hero_image_url(self) -> str:
+        """The article image at page width, or "" when the page has none."""
+        if not self.hero_image_id:
+            return ""
+        try:
+            return self.hero_image.get_rendition("width-1200").url
+        except Exception:
+            return ""
+
+    @property
+    def hero_thumbnail_url(self) -> str:
+        """The article image as a card thumbnail."""
+        if not self.hero_image_id:
+            return ""
+        try:
+            return self.hero_image.get_rendition("fill-400x260").url
+        except Exception:
+            return ""
+
+    @property
     def is_stale(self) -> bool:
         """True when the page is past its review date."""
         if self.review_by is None:
             return False
         from django.utils import timezone
 
-        return self.review_by < timezone.now().date()
+        return self.review_by < timezone.localdate()
 
     @property
     def language(self) -> str:

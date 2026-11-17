@@ -14,13 +14,21 @@ from apps.compat.engine import (
     INFO,
     OK,
     WARN,
+    ChipsetMatchRule,
+    CoolerCapacityRule,
+    CoolerFitRule,
     CoolerSocketSupportRule,
+    CpuMemorySupportRule,
     GpuClearanceRule,
+    GpuInterfaceRule,
+    MemoryFitRule,
     PartContext,
     PsuConnectorRule,
+    PsuFitRule,
     PsuWattageRule,
     RamTypeMatchRule,
     SocketMatchRule,
+    StorageFitRule,
     build_context,
     overall_verdict,
     run_rules,
@@ -195,16 +203,47 @@ class TestGpuClearance:
         assert findings[0].severity == BLOCK
         assert "304mm" in findings[0].message
 
-    def test_tall_cooler_blocks(self):
-        cooler = make_part(EntityType.COOLER, "Kraken 360", "nzxt-kraken-360", height_mm=200)
-        case = make_part(EntityType.CASE, "H5 Flow", "nzxt-h5-flow", max_cooler_height_mm=165)
-        findings = GpuClearanceRule().check(build_context([cooler, case]))
-        assert len(findings) == 1
-        assert "200mm" in findings[0].message
-
     def test_no_case_means_no_finding(self):
         gpu = make_part(EntityType.GPU, "RTX 4080 SUPER", "rtx-4080-super", length_mm=304)
         assert GpuClearanceRule().check(build_context([gpu])) == []
+
+
+# --- Cooler fit --------------------------------------------------------------
+
+
+class TestCoolerFit:
+    def test_tall_air_cooler_blocks(self):
+        cooler = make_part(EntityType.COOLER, "Kraken 360", "nzxt-kraken-360", height_mm=200)
+        case = make_part(EntityType.CASE, "H5 Flow", "nzxt-h5-flow", max_cooler_height_mm=165)
+        findings = CoolerFitRule().check(build_context([cooler, case]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+        assert findings[0].rule_code == "COOLER_FIT"
+        assert "200mm" in findings[0].message
+
+    def test_fitting_air_cooler_passes(self):
+        cooler = make_part(EntityType.COOLER, "Hyper 212", "hyper-212", height_mm=159)
+        case = make_part(EntityType.CASE, "H5 Flow", "nzxt-h5-flow", max_cooler_height_mm=165)
+        assert CoolerFitRule().check(build_context([cooler, case])) == []
+
+    def test_oversized_radiator_blocks(self):
+        cooler = make_part(EntityType.COOLER, "Kraken 360", "nzxt-kraken-360", radiator_mm=360)
+        case = make_part(EntityType.CASE, "Compact", "compact", radiator_support_mm=240)
+        findings = CoolerFitRule().check(build_context([cooler, case]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+        assert "360mm" in findings[0].message
+
+    def test_unknown_radiator_support_stays_silent(self):
+        # The case records no radiator support: the rule must not invent a pass.
+        # `evaluate_candidates` reports such a candidate as *not determined*.
+        cooler = make_part(EntityType.COOLER, "Kraken 360", "nzxt-kraken-360", radiator_mm=360)
+        case = make_part(EntityType.CASE, "Compact", "compact", max_cooler_height_mm=165)
+        assert CoolerFitRule().check(build_context([cooler, case])) == []
+
+    def test_no_case_means_no_finding(self):
+        cooler = make_part(EntityType.COOLER, "Kraken 360", "nzxt-kraken-360", radiator_mm=360)
+        assert CoolerFitRule().check(build_context([cooler])) == []
 
 
 # --- Cooler socket -----------------------------------------------------------
@@ -292,3 +331,157 @@ class TestVerdict:
         findings = run_rules(build_context([]), [ExplodingRule()])
         assert len(findings) == 1
         assert findings[0].severity == INFO
+
+
+# --- Chipset / CPU ↔ board ---------------------------------------------------
+
+
+class TestChipsetMatch:
+    def test_a_chipset_from_another_socket_blocks(self):
+        cpu = make_part(EntityType.CPU, "7800X3D", "cpu", socket="AM5")
+        board = make_part(EntityType.MOTHERBOARD, "B760M", "board", chipset="B760")
+        findings = ChipsetMatchRule().check(build_context([cpu, board]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+
+    def test_the_matching_chipset_passes(self):
+        cpu = make_part(EntityType.CPU, "7800X3D", "cpu", socket="AM5")
+        board = make_part(EntityType.MOTHERBOARD, "B650", "board", chipset="B650")
+        assert ChipsetMatchRule().check(build_context([cpu, board])) == []
+
+    def test_a_missing_chipset_is_not_guessed(self):
+        cpu = make_part(EntityType.CPU, "7800X3D", "cpu", socket="AM5")
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board")
+        assert ChipsetMatchRule().check(build_context([cpu, board])) == []
+
+
+# --- CPU ↔ RAM ---------------------------------------------------------------
+
+
+class TestCpuMemorySupport:
+    def test_a_ddr4_kit_on_a_ddr5_cpu_blocks(self):
+        cpu = make_part(EntityType.CPU, "7800X3D", "cpu", memory_type="DDR5")
+        ram = make_part(EntityType.RAM, "DDR4 kit", "ram", memory_type="DDR4")
+        findings = CpuMemorySupportRule().check(build_context([cpu, ram]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+
+    def test_a_range_on_the_cpu_accepts_both_kinds(self):
+        cpu = make_part(EntityType.CPU, "i5", "cpu", memory_type="DDR4/DDR5")
+        ram = make_part(EntityType.RAM, "DDR5 kit", "ram", memory_type="DDR5")
+        assert CpuMemorySupportRule().check(build_context([cpu, ram])) == []
+
+
+# --- Board ↔ RAM -------------------------------------------------------------
+
+
+class TestMemoryFit:
+    def test_more_modules_than_slots_blocks(self):
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board", memory_slots=2)
+        ram = make_part(EntityType.RAM, "4 modules", "ram", modules=4, capacity_gb=64)
+        findings = MemoryFitRule().check(build_context([board, ram]))
+        assert any(finding.severity == BLOCK for finding in findings)
+
+    def test_capacity_over_the_board_ceiling_blocks(self):
+        board = make_part(
+            EntityType.MOTHERBOARD, "Board", "board", memory_slots=4, max_memory_gb=64
+        )
+        ram = make_part(EntityType.RAM, "128GB kit", "ram", modules=2, capacity_gb=128)
+        findings = MemoryFitRule().check(build_context([board, ram]))
+        assert any(finding.severity == BLOCK for finding in findings)
+
+    def test_a_speed_above_the_rated_rate_only_warns(self):
+        board = make_part(
+            EntityType.MOTHERBOARD,
+            "Board",
+            "board",
+            memory_slots=4,
+            max_memory_gb=128,
+            max_memory_speed=5333,
+        )
+        ram = make_part(
+            EntityType.RAM, "DDR5-6000", "ram", modules=2, capacity_gb=32, speed_mhz=6000
+        )
+        findings = MemoryFitRule().check(build_context([board, ram]))
+        assert len(findings) == 1
+        assert findings[0].severity == WARN
+
+    def test_a_kit_inside_every_limit_passes(self):
+        board = make_part(
+            EntityType.MOTHERBOARD,
+            "Board",
+            "board",
+            memory_slots=4,
+            max_memory_gb=256,
+            max_memory_speed=6400,
+        )
+        ram = make_part(
+            EntityType.RAM, "DDR5-6000", "ram", modules=2, capacity_gb=32, speed_mhz=6000
+        )
+        assert MemoryFitRule().check(build_context([board, ram])) == []
+
+
+# --- Board ↔ GPU / storage ---------------------------------------------------
+
+
+class TestGpuInterface:
+    def test_an_older_board_slot_warns(self):
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board", pcie_gen=3)
+        gpu = make_part(EntityType.GPU, "Card", "gpu", pcie_gen=4)
+        findings = GpuInterfaceRule().check(build_context([board, gpu]))
+        assert len(findings) == 1
+        assert findings[0].severity == WARN
+
+    def test_matching_generations_pass(self):
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board", pcie_gen=4)
+        gpu = make_part(EntityType.GPU, "Card", "gpu", pcie_gen=4)
+        assert GpuInterfaceRule().check(build_context([board, gpu])) == []
+
+
+class TestStorageFit:
+    def test_nvme_without_an_m2_slot_blocks(self):
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board", m2_slots=0)
+        disk = make_part(
+            EntityType.STORAGE, "990 Pro", "disk", interface="PCIe 4.0 x4", form_factor="M.2 2280"
+        )
+        findings = StorageFitRule().check(build_context([board, disk]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+
+    def test_an_m2_slot_present_passes(self):
+        board = make_part(EntityType.MOTHERBOARD, "Board", "board", m2_slots=2, pcie_gen=4)
+        disk = make_part(
+            EntityType.STORAGE, "990 Pro", "disk", interface="PCIe 4.0 x4", form_factor="M.2 2280"
+        )
+        assert StorageFitRule().check(build_context([board, disk])) == []
+
+
+# --- Cooler ↔ CPU / PSU ↔ case -----------------------------------------------
+
+
+class TestCoolerCapacity:
+    def test_an_undersized_cooler_warns(self):
+        cpu = make_part(EntityType.CPU, "Hot CPU", "cpu", tdp=170)
+        cooler = make_part(EntityType.COOLER, "Small cooler", "cooler", tdp_rating=150)
+        findings = CoolerCapacityRule().check(build_context([cpu, cooler]))
+        assert len(findings) == 1
+        assert findings[0].severity == WARN
+
+    def test_an_adequate_cooler_passes(self):
+        cpu = make_part(EntityType.CPU, "CPU", "cpu", tdp=120)
+        cooler = make_part(EntityType.COOLER, "Big cooler", "cooler", tdp_rating=300)
+        assert CoolerCapacityRule().check(build_context([cpu, cooler])) == []
+
+
+class TestPsuFit:
+    def test_a_too_long_psu_blocks(self):
+        case = make_part(EntityType.CASE, "H5", "case", max_psu_length_mm=200)
+        psu = make_part(EntityType.PSU, "Big PSU", "psu", length_mm=210)
+        findings = PsuFitRule().check(build_context([case, psu]))
+        assert len(findings) == 1
+        assert findings[0].severity == BLOCK
+
+    def test_a_fitting_psu_passes(self):
+        case = make_part(EntityType.CASE, "H5", "case", max_psu_length_mm=200)
+        psu = make_part(EntityType.PSU, "PSU", "psu", length_mm=160)
+        assert PsuFitRule().check(build_context([case, psu])) == []

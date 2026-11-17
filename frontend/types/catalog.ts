@@ -17,6 +17,12 @@ export interface Product {
   is_active: boolean
   warranty_months: number
   image_url: string
+  /** The card-sized rendition of the uploaded image ("" when there is none). */
+  image_thumbnail: string
+  /** The wider rendition, for a product's own page. */
+  image_full: string
+  /** The published wiki article about this product's entity ("" when none). */
+  wiki_slug: string
   price_updated_at: string | null
   updated_at: string
 }
@@ -36,6 +42,8 @@ export interface Entity {
   category_slug: string | null
   price_min: string | null
   in_stock: boolean
+  /** The published wiki article about this entity ("" when there is none). */
+  wiki_slug: string
 }
 
 export interface Paginated<T> {

@@ -11,12 +11,39 @@ from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.linking.models import EntityLink
 
 from .models import BuyerGuidePage, ComponentPage, ConceptPage, WikiPage
+
+
+def _linked_product_image(page: WikiPage) -> tuple[str, str]:
+    """The photo of the part the page is about, when the page has no hero image.
+
+    A component article is about a part, and that part's ``Product`` carries the
+    real, model-matched photo — so the article shows it instead of an empty
+    frame. A buying guide falls back to the first recommended product that has a
+    photo. Nothing is invented: an entity with no product image returns empty
+    strings and the frontend renders its quiet empty state.
+    """
+    entity = page.entity
+    product = None
+    if entity is not None:
+        products = entity.products.filter(is_active=True)
+        product = (
+            products.exclude(image__isnull=True).first() or products.exclude(image_url="").first()
+        )
+    if product is None and isinstance(page, BuyerGuidePage):
+        product = next((row for row in page.recommended_products.all() if row.image_id), None)
+    if product is None:
+        return "", ""
+    return (
+        product.image_full_url or product.image_thumbnail_url or product.image_url,
+        product.image_thumbnail_url or product.image_url,
+    )
 
 
 class WikiPageSerializer:
@@ -26,6 +53,12 @@ class WikiPageSerializer:
     @staticmethod
     def to_dict(page: WikiPage, *, include_body: bool = True) -> dict:
         entity = page.entity
+        hero_image = page.hero_image_url
+        hero_thumbnail = page.hero_thumbnail_url
+        if include_body and not hero_image:
+            # Only the detail view renders the image; the list omits the fallback
+            # so it does not cost a query per row for a picture it never shows.
+            hero_image, hero_thumbnail = _linked_product_image(page)
         data = {
             "id": page.id,
             "title": page.title,
@@ -33,6 +66,11 @@ class WikiPageSerializer:
             "path": page.url_path,
             "page_type": page.specific_class.__name__ if page.specific_class else "WikiPage",
             "summary": page.summary,
+            # The article image: the editor's hero image, or the photo of the
+            # product the page is about; empty strings when neither exists (the
+            # frontend then renders its quiet empty state).
+            "hero_image": hero_image,
+            "hero_thumbnail": hero_thumbnail,
             "review_by": page.review_by.isoformat() if page.review_by else None,
             "is_stale": page.is_stale,
             "tags": page.tags,
@@ -203,7 +241,7 @@ class WikiPageListView(generics.ListAPIView):
         if params.get("stale") in {"1", "true", "yes"}:
             from django.utils import timezone
 
-            qs = qs.filter(review_by__lt=timezone.now().date())
+            qs = qs.filter(review_by__lt=timezone.localdate())
 
         query = params.get("q", "").strip()
         if query:
@@ -242,3 +280,37 @@ class WikiPageDetailView(APIView):
             for link in EntityLink.objects.filter(page=page).select_related("target")
         ]
         return Response(data)
+
+
+class WikiAdminLinksView(APIView):
+    """The CMS addresses for managing the wiki, for the staff panel.
+
+    Staff only (``is_staff``). The addresses are built here, next to the CMS,
+    instead of being assembled in the frontend: the editor URL of a page needs
+    its primary key, and the "add page" URL needs the wiki section's key, both
+    of which only the backend knows. The frontend prefixes them with the origin
+    the admin is published on, so nothing is hard-coded to a host.
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request) -> Response:
+        from wagtail.models import Page
+
+        wiki_root = Page.objects.filter(slug="wiki").first()
+        root_id = wiki_root.pk if wiki_root is not None else 1
+        add_base = f"/cms/pages/add/content/{{model}}/{root_id}/"
+        return Response(
+            {
+                "explorer": "/cms/pages/",
+                "wiki_root": f"/cms/pages/{root_id}/",
+                "images": "/cms/images/",
+                "documents": "/cms/documents/",
+                "tickets": "/admin/support/ticket/",
+                "new_page": {
+                    "component": add_base.format(model="componentpage"),
+                    "guide": add_base.format(model="buyerguidepage"),
+                    "concept": add_base.format(model="conceptpage"),
+                },
+            }
+        )

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 from wagtail.models import Page
 
@@ -86,7 +87,7 @@ class TestPageList:
             "old",
             "قدیمی",
             entity=entity,
-            review_by=date.today() - timedelta(days=10),
+            review_by=timezone.localdate() - timedelta(days=10),
         )
         publish(
             wiki_root,
@@ -94,7 +95,7 @@ class TestPageList:
             "new",
             "تازه",
             entity=entity,
-            review_by=date.today() + timedelta(days=10),
+            review_by=timezone.localdate() + timedelta(days=10),
         )
         response = api.get(reverse("content:page-list"), {"stale": "true"})
         assert response.data["count"] == 1
@@ -160,7 +161,7 @@ class TestPageModel:
             "old",
             "قدیمی",
             entity=entity,
-            review_by=date.today() - timedelta(days=1),
+            review_by=timezone.localdate() - timedelta(days=1),
         )
         assert page.is_stale is True
 
@@ -171,7 +172,7 @@ class TestPageModel:
             "new",
             "تازه",
             entity=entity,
-            review_by=date.today() + timedelta(days=1),
+            review_by=timezone.localdate() + timedelta(days=1),
         )
         assert page.is_stale is False
 

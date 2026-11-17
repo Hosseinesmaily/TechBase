@@ -1,1 +1,0 @@
-14,Feedback,Success Feedback,toast checkmark banner,iOS/Android/React Native,Confirm successful actions with brief feedback,Show toast/checkmark or banner,Complete actions silently with no confirmation,showToast('Saved successfully'),// silently update state only,Medium
